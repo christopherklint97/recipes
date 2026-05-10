@@ -32,13 +32,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			{ name: "apple-mobile-web-app-title", content: "Recipes" },
 			{ title: "Recipes" },
 		],
-		links: [
-			{ rel: "stylesheet", href: appCss },
-			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-			{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-			{ rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-			{ rel: "mask-icon", href: "/favicon.svg", color: "#0a0a0a" },
-		],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });
@@ -48,6 +42,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<html lang="en">
 			<head>
 				<HeadContent />
+				<link rel="manifest" href="/manifest.webmanifest" />
+				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+				<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+				<link
+					rel="apple-touch-icon"
+					sizes="180x180"
+					href="/apple-touch-icon.png"
+				/>
+				<link rel="mask-icon" href="/favicon.svg" color="#0a0a0a" />
 			</head>
 			<body>
 				{children}

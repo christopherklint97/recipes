@@ -20,7 +20,7 @@ import { formatQuantity, formatSeconds } from "../../lib/format.ts";
 import { useWakeLock } from "../../lib/wakelock.ts";
 import { getRecipeFn } from "../../server/functions/recipes.ts";
 
-export const Route = createFileRoute("/_app/recipes/$id/cook")({
+export const Route = createFileRoute("/_app/recipes/$id_/cook")({
 	loader: async ({ params }) => {
 		const r = await getRecipeFn({ data: { id: params.id } });
 		if (!r) throw notFound();

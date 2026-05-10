@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Copy, Minus, Plus, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
@@ -121,6 +121,38 @@ function ShoppingPage() {
 		data.aggregated.filter((a) => a.checked).length +
 		data.manual.filter((m) => m.checked).length;
 
+	const [copied, setCopied] = useState(false);
+	async function copyList() {
+		const lines: string[] = [];
+		for (const a of data.aggregated) {
+			if (a.checked) continue;
+			const parts: string[] = [];
+			if (a.quantity != null) {
+				parts.push(`${formatQty(a.quantity)}${a.unknownQty ? "+" : ""}`);
+			}
+			if (a.unit) parts.push(a.unit);
+			parts.push(a.ingredientName);
+			lines.push(parts.join(" "));
+		}
+		for (const m of data.manual) {
+			if (m.checked) continue;
+			const parts: string[] = [];
+			if (m.quantity != null) parts.push(formatQty(m.quantity));
+			if (m.unit) parts.push(m.unit);
+			parts.push(m.ingredientName);
+			lines.push(parts.join(" "));
+		}
+		const text = lines.join("\n");
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		} catch {
+			// ignore
+		}
+	}
+	const remainingCount = totalCount - doneCount;
+
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-5">
 			<header className="space-y-1">
@@ -138,6 +170,21 @@ function ShoppingPage() {
 						setRecipe.mutate({ recipeId, servings })
 					}
 				/>
+				{remainingCount > 0 && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={copyList}
+						aria-label="Copy shopping list"
+					>
+						{copied ? (
+							<Check className="size-4" />
+						) : (
+							<Copy className="size-4" />
+						)}
+						{copied ? "Copied" : "Copy list"}
+					</Button>
+				)}
 				{(data.pickedRecipes.length > 0 || data.manual.length > 0) && (
 					<Button
 						variant="ghost"

@@ -7,7 +7,7 @@ import {
 } from "../../components/recipe/RecipeForm.tsx";
 import { getRecipeFn, updateRecipeFn } from "../../server/functions/recipes.ts";
 
-export const Route = createFileRoute("/_app/recipes/$id/edit")({
+export const Route = createFileRoute("/_app/recipes/$id_/edit")({
 	loader: async ({ params }) => {
 		const recipe = await getRecipeFn({ data: { id: params.id } });
 		if (!recipe) throw notFound();

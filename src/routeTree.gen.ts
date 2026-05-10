@@ -23,8 +23,8 @@ import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
 import { Route as AppRecipesIdRouteImport } from './routes/_app/recipes.$id'
 import { Route as AppCollectionsIdRouteImport } from './routes/_app/collections.$id'
-import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id.edit'
-import { Route as AppRecipesIdCookRouteImport } from './routes/_app/recipes.$id.cook'
+import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id_.edit'
+import { Route as AppRecipesIdCookRouteImport } from './routes/_app/recipes.$id_.cook'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -96,14 +96,14 @@ const AppCollectionsIdRoute = AppCollectionsIdRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesIdEditRoute = AppRecipesIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => AppRecipesIdRoute,
+  id: '/recipes/$id_/edit',
+  path: '/recipes/$id/edit',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesIdCookRoute = AppRecipesIdCookRouteImport.update({
-  id: '/cook',
-  path: '/cook',
-  getParentRoute: () => AppRecipesIdRoute,
+  id: '/recipes/$id_/cook',
+  path: '/recipes/$id/cook',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -112,7 +112,7 @@ export interface FileRoutesByFullPath {
   '/import': typeof AppImportRoute
   '/shopping': typeof AppShoppingRoute
   '/collections/$id': typeof AppCollectionsIdRoute
-  '/recipes/$id': typeof AppRecipesIdRouteWithChildren
+  '/recipes/$id': typeof AppRecipesIdRoute
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -129,7 +129,7 @@ export interface FileRoutesByTo {
   '/shopping': typeof AppShoppingRoute
   '/': typeof AppIndexRoute
   '/collections/$id': typeof AppCollectionsIdRoute
-  '/recipes/$id': typeof AppRecipesIdRouteWithChildren
+  '/recipes/$id': typeof AppRecipesIdRoute
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -148,7 +148,7 @@ export interface FileRoutesById {
   '/_app/shopping': typeof AppShoppingRoute
   '/_app/': typeof AppIndexRoute
   '/_app/collections/$id': typeof AppCollectionsIdRoute
-  '/_app/recipes/$id': typeof AppRecipesIdRouteWithChildren
+  '/_app/recipes/$id': typeof AppRecipesIdRoute
   '/_app/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -156,8 +156,8 @@ export interface FileRoutesById {
   '/api/upload/image': typeof ApiUploadImageRoute
   '/_app/collections/': typeof AppCollectionsIndexRoute
   '/_app/recipes/': typeof AppRecipesIndexRoute
-  '/_app/recipes/$id/cook': typeof AppRecipesIdCookRoute
-  '/_app/recipes/$id/edit': typeof AppRecipesIdEditRoute
+  '/_app/recipes/$id_/cook': typeof AppRecipesIdCookRoute
+  '/_app/recipes/$id_/edit': typeof AppRecipesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -210,8 +210,8 @@ export interface FileRouteTypes {
     | '/api/upload/image'
     | '/_app/collections/'
     | '/_app/recipes/'
-    | '/_app/recipes/$id/cook'
-    | '/_app/recipes/$id/edit'
+    | '/_app/recipes/$id_/cook'
+    | '/_app/recipes/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -323,46 +323,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCollectionsIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/recipes/$id/edit': {
-      id: '/_app/recipes/$id/edit'
-      path: '/edit'
+    '/_app/recipes/$id_/edit': {
+      id: '/_app/recipes/$id_/edit'
+      path: '/recipes/$id/edit'
       fullPath: '/recipes/$id/edit'
       preLoaderRoute: typeof AppRecipesIdEditRouteImport
-      parentRoute: typeof AppRecipesIdRoute
+      parentRoute: typeof AppRoute
     }
-    '/_app/recipes/$id/cook': {
-      id: '/_app/recipes/$id/cook'
-      path: '/cook'
+    '/_app/recipes/$id_/cook': {
+      id: '/_app/recipes/$id_/cook'
+      path: '/recipes/$id/cook'
       fullPath: '/recipes/$id/cook'
       preLoaderRoute: typeof AppRecipesIdCookRouteImport
-      parentRoute: typeof AppRecipesIdRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppRecipesIdRouteChildren {
-  AppRecipesIdCookRoute: typeof AppRecipesIdCookRoute
-  AppRecipesIdEditRoute: typeof AppRecipesIdEditRoute
-}
-
-const AppRecipesIdRouteChildren: AppRecipesIdRouteChildren = {
-  AppRecipesIdCookRoute: AppRecipesIdCookRoute,
-  AppRecipesIdEditRoute: AppRecipesIdEditRoute,
-}
-
-const AppRecipesIdRouteWithChildren = AppRecipesIdRoute._addFileChildren(
-  AppRecipesIdRouteChildren,
-)
 
 interface AppRouteChildren {
   AppImportRoute: typeof AppImportRoute
   AppShoppingRoute: typeof AppShoppingRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCollectionsIdRoute: typeof AppCollectionsIdRoute
-  AppRecipesIdRoute: typeof AppRecipesIdRouteWithChildren
+  AppRecipesIdRoute: typeof AppRecipesIdRoute
   AppRecipesNewRoute: typeof AppRecipesNewRoute
   AppCollectionsIndexRoute: typeof AppCollectionsIndexRoute
   AppRecipesIndexRoute: typeof AppRecipesIndexRoute
+  AppRecipesIdCookRoute: typeof AppRecipesIdCookRoute
+  AppRecipesIdEditRoute: typeof AppRecipesIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -370,10 +358,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppShoppingRoute: AppShoppingRoute,
   AppIndexRoute: AppIndexRoute,
   AppCollectionsIdRoute: AppCollectionsIdRoute,
-  AppRecipesIdRoute: AppRecipesIdRouteWithChildren,
+  AppRecipesIdRoute: AppRecipesIdRoute,
   AppRecipesNewRoute: AppRecipesNewRoute,
   AppCollectionsIndexRoute: AppCollectionsIndexRoute,
   AppRecipesIndexRoute: AppRecipesIndexRoute,
+  AppRecipesIdCookRoute: AppRecipesIdCookRoute,
+  AppRecipesIdEditRoute: AppRecipesIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
