@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    image: recipes:latest
+    container_name: recipes
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:3200:3000"
