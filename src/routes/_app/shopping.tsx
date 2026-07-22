@@ -22,6 +22,7 @@ import {
 	removeShoppingRecipeFn,
 	setAggregateCheckedFn,
 	setShoppingRecipeFn,
+	setShoppingRecipesFn,
 	toggleManualItemFn,
 } from "../../server/functions/shopping.ts";
 
@@ -49,6 +50,12 @@ function ShoppingPage() {
 	const setRecipe = useMutation({
 		mutationFn: (vars: { recipeId: string; servings: number }) =>
 			setShoppingRecipeFn({ data: vars }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+	});
+
+	const addRecipes = useMutation({
+		mutationFn: (recipes: Array<{ recipeId: string; servings: number }>) =>
+			setShoppingRecipesFn({ data: { recipes } }),
 		onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
 	});
 
@@ -166,9 +173,7 @@ function ShoppingPage() {
 			<div className="flex flex-wrap gap-2">
 				<RecipePickerDialog
 					selectedIds={new Set(data.pickedRecipes.map((r) => r.recipeId))}
-					onAdd={(recipeId, servings) =>
-						setRecipe.mutate({ recipeId, servings })
-					}
+					onAdd={(recipes) => addRecipes.mutateAsync(recipes)}
 				/>
 				{remainingCount > 0 && (
 					<Button
@@ -388,29 +393,78 @@ function RecipePickerDialog({
 	onAdd,
 }: {
 	selectedIds: Set<string>;
-	onAdd: (recipeId: string, servings: number) => void;
+	onAdd: (
+		recipes: Array<{ recipeId: string; servings: number }>,
+	) => Promise<unknown>;
 }) {
 	const [open, setOpen] = useState(false);
 	const [q, setQ] = useState("");
+	const [selections, setSelections] = useState<Map<string, number>>(new Map());
+	const [isAdding, setIsAdding] = useState(false);
 	const recipesQ = useQuery({
 		queryKey: ["recipes", { q }],
 		queryFn: () => listRecipesFn({ data: { q } }),
 		enabled: open,
 	});
 
+	function toggleRecipe(recipeId: string, defaultServings: number) {
+		setSelections((current) => {
+			const next = new Map(current);
+			if (next.has(recipeId)) next.delete(recipeId);
+			else next.set(recipeId, defaultServings);
+			return next;
+		});
+	}
+
+	function setServings(recipeId: string, servings: number) {
+		setSelections((current) => {
+			const next = new Map(current);
+			next.set(recipeId, Math.max(1, Math.min(100, servings)));
+			return next;
+		});
+	}
+
+	async function addSelected() {
+		if (selections.size === 0) return;
+		setIsAdding(true);
+		try {
+			await onAdd(
+				Array.from(selections, ([recipeId, servings]) => ({
+					recipeId,
+					servings,
+				})),
+			);
+			setSelections(new Map());
+			setQ("");
+			setOpen(false);
+		} finally {
+			setIsAdding(false);
+		}
+	}
+
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
+		<Dialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen);
+				if (!nextOpen && !isAdding) setSelections(new Map());
+			}}
+		>
 			<DialogTrigger asChild>
 				<Button>
 					<Plus className="size-4" />
-					Add recipe
+					Add recipes
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Pick a recipe</DialogTitle>
+					<DialogTitle>Plan your meal prep</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
+					<p className="text-sm text-muted-foreground">
+						Select several recipes and choose the servings for each. Their
+						ingredients will be combined in your shopping list.
+					</p>
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
@@ -423,16 +477,26 @@ function RecipePickerDialog({
 					<ul className="max-h-80 space-y-1 overflow-auto">
 						{(recipesQ.data ?? []).map((r) => {
 							const already = selectedIds.has(r.id);
+							const selected = selections.has(r.id);
+							const servings = selections.get(r.id) ?? r.servings;
 							return (
-								<li key={r.id}>
+								<li
+									key={r.id}
+									className={`flex items-center gap-3 rounded-md border p-2 text-sm ${
+										selected ? "border-primary bg-primary/5" : ""
+									} ${already ? "opacity-50" : ""}`}
+								>
+									<Checkbox
+										checked={already || selected}
+										disabled={already}
+										onCheckedChange={() => toggleRecipe(r.id, r.servings)}
+										aria-label={`Select ${r.title}`}
+									/>
 									<button
 										type="button"
 										disabled={already}
-										onClick={() => {
-											onAdd(r.id, r.servings);
-											setOpen(false);
-										}}
-										className="flex w-full items-center gap-3 rounded-md border p-2 text-left text-sm enabled:hover:bg-accent disabled:opacity-50"
+										onClick={() => toggleRecipe(r.id, r.servings)}
+										className="flex min-w-0 flex-1 items-center gap-3 text-left"
 									>
 										{r.heroImage ? (
 											<img
@@ -446,12 +510,22 @@ function RecipePickerDialog({
 										<span className="flex-1 line-clamp-2 font-medium">
 											{r.title}
 										</span>
-										{already && (
-											<span className="text-[11px] uppercase text-muted-foreground">
-												Added
-											</span>
-										)}
 									</button>
+									{already ? (
+										<span className="text-[11px] uppercase text-muted-foreground">
+											Added
+										</span>
+									) : selected ? (
+										<div className="shrink-0">
+											<ServingsStepper
+												value={servings}
+												onChange={(value) => setServings(r.id, value)}
+											/>
+											<span className="block text-center text-[10px] text-muted-foreground">
+												servings
+											</span>
+										</div>
+									) : null}
 								</li>
 							);
 						})}
@@ -461,6 +535,20 @@ function RecipePickerDialog({
 							</li>
 						)}
 					</ul>
+					<div className="flex items-center justify-between gap-3 border-t pt-3">
+						<span className="text-sm text-muted-foreground">
+							{selections.size} selected
+						</span>
+						<Button
+							type="button"
+							disabled={selections.size === 0 || isAdding}
+							onClick={addSelected}
+						>
+							{isAdding
+								? "Adding…"
+								: `Add ${selections.size || ""} recipe${selections.size === 1 ? "" : "s"}`}
+						</Button>
+					</div>
 				</div>
 			</DialogContent>
 		</Dialog>

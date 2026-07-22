@@ -31,7 +31,7 @@ export const listTagsFn = createServerFn({ method: "GET" })
 
 export const listTagsForRecipeFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ recipeId: z.string().min(1) }))
+	.validator(z.object({ recipeId: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		const ids = db
 			.select({ id: recipeTags.tagId })
@@ -45,7 +45,7 @@ export const listTagsForRecipeFn = createServerFn({ method: "GET" })
 
 export const setRecipeTagsFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			recipeId: z.string().min(1),
 			tagNames: z.array(z.string()).default([]),
@@ -82,7 +82,7 @@ export const setRecipeTagsFn = createServerFn({ method: "POST" })
 
 export const listRecipesByTagFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ tag: z.string().min(1) }))
+	.validator(z.object({ tag: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		const name = normalizeTag(data.tag);
 		const tag = db.select().from(tags).where(eq(tags.name, name)).get();

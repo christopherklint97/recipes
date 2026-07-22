@@ -30,13 +30,16 @@ export const Route = createFileRoute("/api/images/$name")({
 
 				const ext = safe.split(".").pop() ?? "";
 				const stream = createReadStream(filePath);
-				return new Response(Readable.toWeb(stream) as unknown as ReadableStream, {
-					headers: {
-						"Content-Type": mimeForExt(ext),
-						"Content-Length": String(info.size),
-						"Cache-Control": "private, max-age=31536000, immutable",
+				return new Response(
+					Readable.toWeb(stream) as unknown as ReadableStream,
+					{
+						headers: {
+							"Content-Type": mimeForExt(ext),
+							"Content-Length": String(info.size),
+							"Cache-Control": "private, max-age=31536000, immutable",
+						},
 					},
-				});
+				);
 			},
 		},
 	},

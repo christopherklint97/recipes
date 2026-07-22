@@ -80,7 +80,7 @@ export type RecipeInput = z.infer<typeof recipeInput>;
 
 export const listRecipesFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z
 			.object({
 				q: z.string().optional(),
@@ -111,7 +111,7 @@ export const listRecipesFn = createServerFn({ method: "GET" })
 
 export const getRecipeFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string().min(1) }))
+	.validator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		const recipe = db
 			.select()
@@ -187,7 +187,7 @@ function writeRecipeChildren(
 
 export const createRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(recipeInput)
+	.validator(recipeInput)
 	.handler(async ({ data }) => {
 		const id = crypto.randomUUID();
 		db.insert(recipes)
@@ -214,7 +214,7 @@ export const createRecipeFn = createServerFn({ method: "POST" })
 
 export const updateRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(recipeInput.extend({ id: z.string().min(1) }))
+	.validator(recipeInput.extend({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		const {
 			id,
@@ -256,10 +256,10 @@ export const updateRecipeFn = createServerFn({ method: "POST" })
 
 export const deleteRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string().min(1) }))
+	.validator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		db.delete(recipes).where(eq(recipes.id, data.id)).run();
 		return { id: data.id };
 	});
 
-export { recipeInput, ingredientInput, instructionInput };
+export { ingredientInput, instructionInput, recipeInput };

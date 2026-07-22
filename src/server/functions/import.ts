@@ -8,7 +8,7 @@ const urlInput = z.object({ url: z.string().url() });
 
 export const importFromUrlFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(urlInput)
+	.validator(urlInput)
 	.handler(async ({ data }) => {
 		try {
 			return { ok: true as const, recipe: await scrapeRecipeFromUrl(data.url) };
@@ -22,7 +22,7 @@ export const importFromUrlFn = createServerFn({ method: "POST" })
 
 export const importFromSocialFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(urlInput)
+	.validator(urlInput)
 	.handler(async ({ data }) => {
 		try {
 			return { ok: true as const, social: await scrapeSocial(data.url) };

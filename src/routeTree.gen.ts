@@ -9,30 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
-import { Route as AppShoppingRouteImport } from './routes/_app/shopping'
 import { Route as AppImportRouteImport } from './routes/_app/import'
-import { Route as AppRecipesIndexRouteImport } from './routes/_app/recipes.index'
+import { Route as AppShoppingRouteImport } from './routes/_app/shopping'
 import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collections.index'
-import { Route as ApiUploadImageRouteImport } from './routes/api/upload/image'
-import { Route as ApiImagesNameRouteImport } from './routes/api/images/$name'
-import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
-import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
-import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
-import { Route as AppRecipesIdRouteImport } from './routes/_app/recipes.$id'
 import { Route as AppCollectionsIdRouteImport } from './routes/_app/collections.$id'
-import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id_.edit'
+import { Route as AppRecipesIndexRouteImport } from './routes/_app/recipes.index'
+import { Route as AppRecipesIdRouteImport } from './routes/_app/recipes.$id'
+import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiImagesNameRouteImport } from './routes/api/images/$name'
+import { Route as ApiUploadImageRouteImport } from './routes/api/upload/image'
 import { Route as AppRecipesIdCookRouteImport } from './routes/_app/recipes.$id_.cook'
+import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id_.edit'
 
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -40,19 +40,14 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppShoppingRoute = AppShoppingRouteImport.update({
-  id: '/shopping',
-  path: '/shopping',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppImportRoute = AppImportRouteImport.update({
   id: '/import',
   path: '/import',
   getParentRoute: () => AppRoute,
 } as any)
-const AppRecipesIndexRoute = AppRecipesIndexRouteImport.update({
-  id: '/recipes/',
-  path: '/recipes/',
+const AppShoppingRoute = AppShoppingRouteImport.update({
+  id: '/shopping',
+  path: '/shopping',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCollectionsIndexRoute = AppCollectionsIndexRouteImport.update({
@@ -60,29 +55,14 @@ const AppCollectionsIndexRoute = AppCollectionsIndexRouteImport.update({
   path: '/collections/',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiUploadImageRoute = ApiUploadImageRouteImport.update({
-  id: '/api/upload/image',
-  path: '/api/upload/image',
-  getParentRoute: () => rootRouteImport,
+const AppCollectionsIdRoute = AppCollectionsIdRouteImport.update({
+  id: '/collections/$id',
+  path: '/collections/$id',
+  getParentRoute: () => AppRoute,
 } as any)
-const ApiImagesNameRoute = ApiImagesNameRouteImport.update({
-  id: '/api/images/$name',
-  path: '/api/images/$name',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
-  id: '/api/auth/logout',
-  path: '/api/auth/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
-  id: '/api/auth/login',
-  path: '/api/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRecipesNewRoute = AppRecipesNewRouteImport.update({
-  id: '/recipes/new',
-  path: '/recipes/new',
+const AppRecipesIndexRoute = AppRecipesIndexRouteImport.update({
+  id: '/recipes/',
+  path: '/recipes/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesIdRoute = AppRecipesIdRouteImport.update({
@@ -90,19 +70,39 @@ const AppRecipesIdRoute = AppRecipesIdRouteImport.update({
   path: '/recipes/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCollectionsIdRoute = AppCollectionsIdRouteImport.update({
-  id: '/collections/$id',
-  path: '/collections/$id',
+const AppRecipesNewRoute = AppRecipesNewRouteImport.update({
+  id: '/recipes/new',
+  path: '/recipes/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiImagesNameRoute = ApiImagesNameRouteImport.update({
+  id: '/api/images/$name',
+  path: '/api/images/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadImageRoute = ApiUploadImageRouteImport.update({
+  id: '/api/upload/image',
+  path: '/api/upload/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRecipesIdCookRoute = AppRecipesIdCookRouteImport.update({
+  id: '/recipes/$id_/cook',
+  path: '/recipes/$id/cook',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesIdEditRoute = AppRecipesIdEditRouteImport.update({
   id: '/recipes/$id_/edit',
   path: '/recipes/$id/edit',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRecipesIdCookRoute = AppRecipesIdCookRouteImport.update({
-  id: '/recipes/$id_/cook',
-  path: '/recipes/$id/cook',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -225,18 +225,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app': {
       id: '/_app'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -246,13 +246,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/shopping': {
-      id: '/_app/shopping'
-      path: '/shopping'
-      fullPath: '/shopping'
-      preLoaderRoute: typeof AppShoppingRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/import': {
       id: '/_app/import'
       path: '/import'
@@ -260,11 +253,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppImportRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/recipes/': {
-      id: '/_app/recipes/'
-      path: '/recipes'
-      fullPath: '/recipes/'
-      preLoaderRoute: typeof AppRecipesIndexRouteImport
+    '/_app/shopping': {
+      id: '/_app/shopping'
+      path: '/shopping'
+      fullPath: '/shopping'
+      preLoaderRoute: typeof AppShoppingRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/collections/': {
@@ -274,39 +267,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCollectionsIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/upload/image': {
-      id: '/api/upload/image'
-      path: '/api/upload/image'
-      fullPath: '/api/upload/image'
-      preLoaderRoute: typeof ApiUploadImageRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/collections/$id': {
+      id: '/_app/collections/$id'
+      path: '/collections/$id'
+      fullPath: '/collections/$id'
+      preLoaderRoute: typeof AppCollectionsIdRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/api/images/$name': {
-      id: '/api/images/$name'
-      path: '/api/images/$name'
-      fullPath: '/api/images/$name'
-      preLoaderRoute: typeof ApiImagesNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/logout': {
-      id: '/api/auth/logout'
-      path: '/api/auth/logout'
-      fullPath: '/api/auth/logout'
-      preLoaderRoute: typeof ApiAuthLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/login': {
-      id: '/api/auth/login'
-      path: '/api/auth/login'
-      fullPath: '/api/auth/login'
-      preLoaderRoute: typeof ApiAuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app/recipes/new': {
-      id: '/_app/recipes/new'
-      path: '/recipes/new'
-      fullPath: '/recipes/new'
-      preLoaderRoute: typeof AppRecipesNewRouteImport
+    '/_app/recipes/': {
+      id: '/_app/recipes/'
+      path: '/recipes'
+      fullPath: '/recipes/'
+      preLoaderRoute: typeof AppRecipesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/recipes/$id': {
@@ -316,11 +288,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecipesIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/collections/$id': {
-      id: '/_app/collections/$id'
-      path: '/collections/$id'
-      fullPath: '/collections/$id'
-      preLoaderRoute: typeof AppCollectionsIdRouteImport
+    '/_app/recipes/new': {
+      id: '/_app/recipes/new'
+      path: '/recipes/new'
+      fullPath: '/recipes/new'
+      preLoaderRoute: typeof AppRecipesNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/images/$name': {
+      id: '/api/images/$name'
+      path: '/api/images/$name'
+      fullPath: '/api/images/$name'
+      preLoaderRoute: typeof ApiImagesNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/image': {
+      id: '/api/upload/image'
+      path: '/api/upload/image'
+      fullPath: '/api/upload/image'
+      preLoaderRoute: typeof ApiUploadImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/recipes/$id_/cook': {
+      id: '/_app/recipes/$id_/cook'
+      path: '/recipes/$id/cook'
+      fullPath: '/recipes/$id/cook'
+      preLoaderRoute: typeof AppRecipesIdCookRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/recipes/$id_/edit': {
@@ -328,13 +335,6 @@ declare module '@tanstack/react-router' {
       path: '/recipes/$id/edit'
       fullPath: '/recipes/$id/edit'
       preLoaderRoute: typeof AppRecipesIdEditRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/recipes/$id_/cook': {
-      id: '/_app/recipes/$id_/cook'
-      path: '/recipes/$id/cook'
-      fullPath: '/recipes/$id/cook'
-      preLoaderRoute: typeof AppRecipesIdCookRouteImport
       parentRoute: typeof AppRoute
     }
   }

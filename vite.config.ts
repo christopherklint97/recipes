@@ -15,6 +15,7 @@ const config = defineConfig({
 		tanstackStart(),
 		viteReact(),
 		VitePWA({
+			outDir: ".output/public",
 			registerType: "autoUpdate",
 			injectRegister: "auto",
 			includeAssets: [

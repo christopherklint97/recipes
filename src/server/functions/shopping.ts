@@ -130,7 +130,7 @@ export const listShoppingFn = createServerFn({ method: "GET" })
 
 export const setShoppingRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			recipeId: z.string().min(1),
 			servings: z.number().int().min(1).max(100),
@@ -155,9 +155,44 @@ export const setShoppingRecipeFn = createServerFn({ method: "POST" })
 		return { ok: true };
 	});
 
+export const setShoppingRecipesFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		z.object({
+			recipes: z
+				.array(
+					z.object({
+						recipeId: z.string().min(1),
+						servings: z.number().int().min(1).max(100),
+					}),
+				)
+				.min(1)
+				.max(100),
+		}),
+	)
+	.handler(async ({ data }) => {
+		const selections = Array.from(
+			new Map(data.recipes.map((recipe) => [recipe.recipeId, recipe])).values(),
+		);
+
+		db.transaction((tx) => {
+			for (const selection of selections) {
+				tx.insert(shoppingRecipes)
+					.values(selection)
+					.onConflictDoUpdate({
+						target: shoppingRecipes.recipeId,
+						set: { servings: selection.servings },
+					})
+					.run();
+			}
+		});
+
+		return { ok: true, count: selections.length };
+	});
+
 export const removeShoppingRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ recipeId: z.string().min(1) }))
+	.validator(z.object({ recipeId: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		db.delete(shoppingRecipes)
 			.where(eq(shoppingRecipes.recipeId, data.recipeId))
@@ -167,7 +202,7 @@ export const removeShoppingRecipeFn = createServerFn({ method: "POST" })
 
 export const setAggregateCheckedFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ key: z.string().min(1), checked: z.boolean() }))
+	.validator(z.object({ key: z.string().min(1), checked: z.boolean() }))
 	.handler(async ({ data }) => {
 		if (data.checked) {
 			db.insert(shoppingChecks)
@@ -182,7 +217,7 @@ export const setAggregateCheckedFn = createServerFn({ method: "POST" })
 
 export const toggleManualItemFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string(), checked: z.boolean() }))
+	.validator(z.object({ id: z.string(), checked: z.boolean() }))
 	.handler(async ({ data }) => {
 		db.update(shoppingItems)
 			.set({ checked: data.checked })
@@ -193,7 +228,7 @@ export const toggleManualItemFn = createServerFn({ method: "POST" })
 
 export const addManualItemFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			ingredientName: z.string().min(1).max(120),
 			quantity: z.number().nullable().optional(),
@@ -216,7 +251,7 @@ export const addManualItemFn = createServerFn({ method: "POST" })
 
 export const deleteManualItemFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string() }))
+	.validator(z.object({ id: z.string() }))
 	.handler(async ({ data }) => {
 		db.delete(shoppingItems).where(eq(shoppingItems.id, data.id)).run();
 		return { ok: true };

@@ -27,7 +27,7 @@ export const listCollectionsFn = createServerFn({ method: "GET" })
 
 export const getCollectionFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string().min(1) }))
+	.validator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		const collection = db
 			.select()
@@ -60,7 +60,7 @@ export const getCollectionFn = createServerFn({ method: "GET" })
 
 export const createCollectionFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			name: z.string().min(1).max(80),
 			icon: z.string().max(8).nullable().optional(),
@@ -76,7 +76,7 @@ export const createCollectionFn = createServerFn({ method: "POST" })
 
 export const updateCollectionFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			id: z.string().min(1),
 			name: z.string().min(1).max(80),
@@ -97,7 +97,7 @@ export const updateCollectionFn = createServerFn({ method: "POST" })
 
 export const deleteCollectionFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ id: z.string().min(1) }))
+	.validator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		db.delete(collections).where(eq(collections.id, data.id)).run();
 		return { id: data.id };
@@ -105,7 +105,7 @@ export const deleteCollectionFn = createServerFn({ method: "POST" })
 
 export const setRecipeInCollectionFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.inputValidator(
+	.validator(
 		z.object({
 			recipeId: z.string().min(1),
 			collectionId: z.string().min(1),
@@ -136,7 +136,7 @@ export const setRecipeInCollectionFn = createServerFn({ method: "POST" })
 
 export const listCollectionsForRecipeFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
-	.inputValidator(z.object({ recipeId: z.string().min(1) }))
+	.validator(z.object({ recipeId: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		return db
 			.select({ id: recipeCollections.collectionId })
