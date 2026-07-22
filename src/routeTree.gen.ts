@@ -16,6 +16,8 @@ import { Route as AppImportRouteImport } from './routes/_app/import'
 import { Route as AppShoppingRouteImport } from './routes/_app/shopping'
 import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collections.index'
 import { Route as AppCollectionsIdRouteImport } from './routes/_app/collections.$id'
+import { Route as AppMealPrepIndexRouteImport } from './routes/_app/meal-prep.index'
+import { Route as AppMealPrepIdRouteImport } from './routes/_app/meal-prep.$id'
 import { Route as AppRecipesIndexRouteImport } from './routes/_app/recipes.index'
 import { Route as AppRecipesIdRouteImport } from './routes/_app/recipes.$id'
 import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
@@ -58,6 +60,16 @@ const AppCollectionsIndexRoute = AppCollectionsIndexRouteImport.update({
 const AppCollectionsIdRoute = AppCollectionsIdRouteImport.update({
   id: '/collections/$id',
   path: '/collections/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMealPrepIndexRoute = AppMealPrepIndexRouteImport.update({
+  id: '/meal-prep/',
+  path: '/meal-prep/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMealPrepIdRoute = AppMealPrepIdRouteImport.update({
+  id: '/meal-prep/$id',
+  path: '/meal-prep/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesIndexRoute = AppRecipesIndexRouteImport.update({
@@ -112,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/import': typeof AppImportRoute
   '/shopping': typeof AppShoppingRoute
   '/collections/$id': typeof AppCollectionsIdRoute
+  '/meal-prep/$id': typeof AppMealPrepIdRoute
   '/recipes/$id': typeof AppRecipesIdRoute
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -119,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/collections/': typeof AppCollectionsIndexRoute
+  '/meal-prep/': typeof AppMealPrepIndexRoute
   '/recipes/': typeof AppRecipesIndexRoute
   '/recipes/$id/cook': typeof AppRecipesIdCookRoute
   '/recipes/$id/edit': typeof AppRecipesIdEditRoute
@@ -129,6 +143,7 @@ export interface FileRoutesByTo {
   '/shopping': typeof AppShoppingRoute
   '/': typeof AppIndexRoute
   '/collections/$id': typeof AppCollectionsIdRoute
+  '/meal-prep/$id': typeof AppMealPrepIdRoute
   '/recipes/$id': typeof AppRecipesIdRoute
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -136,6 +151,7 @@ export interface FileRoutesByTo {
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/collections': typeof AppCollectionsIndexRoute
+  '/meal-prep': typeof AppMealPrepIndexRoute
   '/recipes': typeof AppRecipesIndexRoute
   '/recipes/$id/cook': typeof AppRecipesIdCookRoute
   '/recipes/$id/edit': typeof AppRecipesIdEditRoute
@@ -148,6 +164,7 @@ export interface FileRoutesById {
   '/_app/shopping': typeof AppShoppingRoute
   '/_app/': typeof AppIndexRoute
   '/_app/collections/$id': typeof AppCollectionsIdRoute
+  '/_app/meal-prep/$id': typeof AppMealPrepIdRoute
   '/_app/recipes/$id': typeof AppRecipesIdRoute
   '/_app/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -155,6 +172,7 @@ export interface FileRoutesById {
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/_app/collections/': typeof AppCollectionsIndexRoute
+  '/_app/meal-prep/': typeof AppMealPrepIndexRoute
   '/_app/recipes/': typeof AppRecipesIndexRoute
   '/_app/recipes/$id_/cook': typeof AppRecipesIdCookRoute
   '/_app/recipes/$id_/edit': typeof AppRecipesIdEditRoute
@@ -167,6 +185,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/shopping'
     | '/collections/$id'
+    | '/meal-prep/$id'
     | '/recipes/$id'
     | '/recipes/new'
     | '/api/auth/login'
@@ -174,6 +193,7 @@ export interface FileRouteTypes {
     | '/api/images/$name'
     | '/api/upload/image'
     | '/collections/'
+    | '/meal-prep/'
     | '/recipes/'
     | '/recipes/$id/cook'
     | '/recipes/$id/edit'
@@ -184,6 +204,7 @@ export interface FileRouteTypes {
     | '/shopping'
     | '/'
     | '/collections/$id'
+    | '/meal-prep/$id'
     | '/recipes/$id'
     | '/recipes/new'
     | '/api/auth/login'
@@ -191,6 +212,7 @@ export interface FileRouteTypes {
     | '/api/images/$name'
     | '/api/upload/image'
     | '/collections'
+    | '/meal-prep'
     | '/recipes'
     | '/recipes/$id/cook'
     | '/recipes/$id/edit'
@@ -202,6 +224,7 @@ export interface FileRouteTypes {
     | '/_app/shopping'
     | '/_app/'
     | '/_app/collections/$id'
+    | '/_app/meal-prep/$id'
     | '/_app/recipes/$id'
     | '/_app/recipes/new'
     | '/api/auth/login'
@@ -209,6 +232,7 @@ export interface FileRouteTypes {
     | '/api/images/$name'
     | '/api/upload/image'
     | '/_app/collections/'
+    | '/_app/meal-prep/'
     | '/_app/recipes/'
     | '/_app/recipes/$id_/cook'
     | '/_app/recipes/$id_/edit'
@@ -272,6 +296,20 @@ declare module '@tanstack/react-router' {
       path: '/collections/$id'
       fullPath: '/collections/$id'
       preLoaderRoute: typeof AppCollectionsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/meal-prep/': {
+      id: '/_app/meal-prep/'
+      path: '/meal-prep'
+      fullPath: '/meal-prep/'
+      preLoaderRoute: typeof AppMealPrepIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/meal-prep/$id': {
+      id: '/_app/meal-prep/$id'
+      path: '/meal-prep/$id'
+      fullPath: '/meal-prep/$id'
+      preLoaderRoute: typeof AppMealPrepIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/recipes/': {
@@ -345,9 +383,11 @@ interface AppRouteChildren {
   AppShoppingRoute: typeof AppShoppingRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCollectionsIdRoute: typeof AppCollectionsIdRoute
+  AppMealPrepIdRoute: typeof AppMealPrepIdRoute
   AppRecipesIdRoute: typeof AppRecipesIdRoute
   AppRecipesNewRoute: typeof AppRecipesNewRoute
   AppCollectionsIndexRoute: typeof AppCollectionsIndexRoute
+  AppMealPrepIndexRoute: typeof AppMealPrepIndexRoute
   AppRecipesIndexRoute: typeof AppRecipesIndexRoute
   AppRecipesIdCookRoute: typeof AppRecipesIdCookRoute
   AppRecipesIdEditRoute: typeof AppRecipesIdEditRoute
@@ -358,9 +398,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppShoppingRoute: AppShoppingRoute,
   AppIndexRoute: AppIndexRoute,
   AppCollectionsIdRoute: AppCollectionsIdRoute,
+  AppMealPrepIdRoute: AppMealPrepIdRoute,
   AppRecipesIdRoute: AppRecipesIdRoute,
   AppRecipesNewRoute: AppRecipesNewRoute,
   AppCollectionsIndexRoute: AppCollectionsIndexRoute,
+  AppMealPrepIndexRoute: AppMealPrepIndexRoute,
   AppRecipesIndexRoute: AppRecipesIndexRoute,
   AppRecipesIdCookRoute: AppRecipesIdCookRoute,
   AppRecipesIdEditRoute: AppRecipesIdEditRoute,

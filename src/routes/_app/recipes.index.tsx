@@ -1,20 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+	CalendarPlus,
 	CheckSquare,
 	Download,
 	ListChecks,
 	Plus,
 	Search,
-	ShoppingCart,
 	X,
 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import {
-	type MealPrepRecipe,
-	useMealPrep,
-} from "../../components/meal-prep/MealPrepProvider.tsx";
+	AddToMealPrepDialog,
+	type MealPrepCandidate,
+} from "../../components/meal-prep/AddToMealPrepDialog.tsx";
+import type { MealPrepRecipe } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
@@ -38,9 +39,12 @@ function RecipesPage() {
 	const initial = Route.useLoaderData();
 	const { tag } = Route.useSearch();
 	const navigate = useNavigate();
-	const { openMealPrep } = useMealPrep();
 	const [q, setQ] = useState("");
 	const [selecting, setSelecting] = useState(false);
+	const [mealPrepRecipes, setMealPrepRecipes] = useState<MealPrepCandidate[]>(
+		[],
+	);
+	const [mealPrepOpen, setMealPrepOpen] = useState(false);
 	const [selected, setSelected] = useState<Map<string, MealPrepRecipe>>(
 		new Map(),
 	);
@@ -87,14 +91,20 @@ function RecipesPage() {
 
 	function finishSelection() {
 		if (selected.size === 0) return;
-		openMealPrep(Array.from(selected.values()));
+		setMealPrepRecipes(Array.from(selected.values()));
+		setMealPrepOpen(true);
 		setSelected(new Map());
 		setSelecting(false);
 	}
 
+	function addRecipeToMealPrep(recipe: MealPrepCandidate) {
+		setMealPrepRecipes([recipe]);
+		setMealPrepOpen(true);
+	}
+
 	return (
 		<div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5">
-			<header className="flex items-center justify-between gap-3">
+			<header className="space-y-3">
 				<div className="min-w-0">
 					<h1 className="text-3xl font-semibold tracking-tight">Recipes</h1>
 					<p className="text-sm text-muted-foreground">
@@ -102,7 +112,7 @@ function RecipesPage() {
 						{selected.size > 0 && ` · ${selected.size} selected`}
 					</p>
 				</div>
-				<div className="flex shrink-0 flex-wrap justify-end gap-2">
+				<div className="flex flex-wrap gap-2">
 					<Button
 						variant={selecting ? "secondary" : "outline"}
 						size="sm"
@@ -184,71 +194,86 @@ function RecipesPage() {
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{filtered.map((recipe) => {
 						const isSelected = selected.has(recipe.id);
-						const cardClass = `group relative block w-full overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-							isSelected ? "border-primary ring-2 ring-primary/30" : ""
-						}`;
-						const cardContent = (
-							<>
-								{recipe.heroImage ? (
-									<img
-										src={recipe.heroImage}
-										alt=""
-										className="block aspect-[4/3] w-full object-cover"
-									/>
-								) : (
-									<div className="aspect-[4/3] w-full bg-muted" />
-								)}
-								<div className="space-y-1 p-4">
-									<h3 className="line-clamp-2 font-semibold leading-snug">
-										{recipe.title}
-									</h3>
-									{recipe.description && (
-										<p className="line-clamp-2 text-sm text-muted-foreground">
-											{recipe.description}
-										</p>
-									)}
-									<p className="text-xs text-muted-foreground">
-										{recipe.servings} servings · {recipe.ingredientCount}{" "}
-										ingredients
-									</p>
-								</div>
-							</>
+						const image = recipe.heroImage ? (
+							<img
+								src={recipe.heroImage}
+								alt=""
+								className="block aspect-[4/3] w-full object-cover"
+							/>
+						) : (
+							<div className="aspect-[4/3] w-full bg-muted" />
 						);
 						return (
-							<li key={recipe.id} className="relative">
+							<li
+								key={recipe.id}
+								className={`relative overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md ${isSelected ? "border-primary ring-2 ring-primary/30" : ""}`}
+							>
 								{selecting ? (
 									<button
 										type="button"
-										className={cardClass}
+										className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										onClick={() => toggleRecipe(recipe)}
 										aria-pressed={isSelected}
 									>
-										{cardContent}
+										{image}
+										<div className="space-y-1 p-4">
+											<h3 className="line-clamp-2 font-semibold leading-snug">
+												{recipe.title}
+											</h3>
+											{recipe.description && (
+												<p className="line-clamp-2 text-sm text-muted-foreground">
+													{recipe.description}
+												</p>
+											)}
+											<p className="text-xs text-muted-foreground">
+												{recipe.servings} servings · {recipe.ingredientCount}{" "}
+												ingredients
+											</p>
+										</div>
 									</button>
 								) : (
-									<Link
-										to="/recipes/$id"
-										params={{ id: recipe.id }}
-										className={cardClass}
-									>
-										{cardContent}
-									</Link>
+									<>
+										<Link
+											to="/recipes/$id"
+											params={{ id: recipe.id }}
+											className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											{image}
+										</Link>
+										<div className="space-y-2 p-4">
+											<Link
+												to="/recipes/$id"
+												params={{ id: recipe.id }}
+												className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+											>
+												<h3 className="line-clamp-2 font-semibold leading-snug">
+													{recipe.title}
+												</h3>
+											</Link>
+											<Button
+												type="button"
+												variant="secondary"
+												size="sm"
+												onClick={() => addRecipeToMealPrep(recipe)}
+											>
+												<CalendarPlus className="size-4" /> Add to meal prep
+											</Button>
+											{recipe.description && (
+												<p className="line-clamp-2 text-sm text-muted-foreground">
+													{recipe.description}
+												</p>
+											)}
+											<p className="text-xs text-muted-foreground">
+												{recipe.servings} servings · {recipe.ingredientCount}{" "}
+												ingredients
+											</p>
+										</div>
+									</>
 								)}
-								{selecting ? (
+								{selecting && (
 									<div className="pointer-events-none absolute left-3 top-3 rounded-md bg-background/90 p-1 shadow">
 										<Checkbox checked={isSelected} tabIndex={-1} />
 									</div>
-								) : (
-									<Button
-										type="button"
-										variant="secondary"
-										size="icon"
-										className="absolute right-3 top-3 shadow"
-										onClick={() => openMealPrep([recipe])}
-										aria-label={`Add ${recipe.title} to shopping`}
-									>
-										<ShoppingCart className="size-4" />
-									</Button>
 								)}
 							</li>
 						);
@@ -261,7 +286,7 @@ function RecipesPage() {
 					<div className="min-w-0 flex-1">
 						<p className="font-medium">{selected.size} recipes selected</p>
 						<p className="text-xs text-muted-foreground">
-							Adjust servings and batches next
+							Save them together in a named meal prep
 						</p>
 					</div>
 					<Button
@@ -272,11 +297,16 @@ function RecipesPage() {
 						Clear
 					</Button>
 					<Button onClick={finishSelection}>
-						Set quantities
-						<ShoppingCart className="size-4" />
+						Add to meal prep
+						<CalendarPlus className="size-4" />
 					</Button>
 				</div>
 			)}
+			<AddToMealPrepDialog
+				open={mealPrepOpen}
+				onOpenChange={setMealPrepOpen}
+				recipes={mealPrepRecipes}
+			/>
 		</div>
 	);
 }

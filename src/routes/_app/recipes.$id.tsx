@@ -6,17 +6,17 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import {
+	CalendarPlus,
 	ChefHat,
 	Clock,
 	FolderPlus,
 	Pencil,
 	Play,
-	ShoppingCart,
 	Trash2,
 	Users,
 } from "lucide-react";
 import { useState } from "react";
-import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
+import { AddToMealPrepDialog } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_app/recipes/$id")({
 function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
 	const router = useRouter();
-	const { openMealPrep } = useMealPrep();
+	const [mealPrepOpen, setMealPrepOpen] = useState(false);
 
 	const del = useMutation({
 		mutationFn: () => deleteRecipeFn({ data: { id: recipe.id } }),
@@ -85,20 +85,10 @@ function RecipeDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() =>
-							openMealPrep([
-								{
-									id: recipe.id,
-									title: recipe.title,
-									heroImage: recipe.heroImage,
-									servings: recipe.servings,
-									ingredientCount: recipe.ingredients.length,
-								},
-							])
-						}
+						onClick={() => setMealPrepOpen(true)}
 					>
-						<ShoppingCart className="size-4" />
-						Add to shopping
+						<CalendarPlus className="size-4" />
+						Add to meal prep
 					</Button>
 					<CollectionPickerButton recipeId={recipe.id} />
 					<Button asChild variant="outline" size="sm">
@@ -240,6 +230,11 @@ function RecipeDetailPage() {
 					</CardContent>
 				</Card>
 			)}
+			<AddToMealPrepDialog
+				open={mealPrepOpen}
+				onOpenChange={setMealPrepOpen}
+				recipes={[{ id: recipe.id, title: recipe.title }]}
+			/>
 		</div>
 	);
 }

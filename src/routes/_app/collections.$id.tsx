@@ -5,17 +5,35 @@ import {
 	notFound,
 	useRouter,
 } from "@tanstack/react-router";
-import { CheckSquare, ListChecks, ShoppingCart, Trash2 } from "lucide-react";
+import {
+	CalendarPlus,
+	CheckSquare,
+	ListChecks,
+	Pencil,
+	Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import {
-	type MealPrepRecipe,
-	useMealPrep,
-} from "../../components/meal-prep/MealPrepProvider.tsx";
+	AddToMealPrepDialog,
+	type MealPrepCandidate,
+} from "../../components/meal-prep/AddToMealPrepDialog.tsx";
+import type { MealPrepRecipe } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
 import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../../components/ui/dialog.tsx";
+import { Input } from "../../components/ui/input.tsx";
+import { Label } from "../../components/ui/label.tsx";
+import {
 	deleteCollectionFn,
 	getCollectionFn,
+	setRecipeInCollectionFn,
+	updateCollectionFn,
 } from "../../server/functions/collections.ts";
 
 export const Route = createFileRoute("/_app/collections/$id")({
@@ -30,8 +48,12 @@ export const Route = createFileRoute("/_app/collections/$id")({
 function CollectionPage() {
 	const collection = Route.useLoaderData();
 	const router = useRouter();
-	const { openMealPrep } = useMealPrep();
 	const [selecting, setSelecting] = useState(false);
+	const [mealPrepOpen, setMealPrepOpen] = useState(false);
+	const [mealPrepRecipes, setMealPrepRecipes] = useState<MealPrepCandidate[]>(
+		[],
+	);
+	const [editOpen, setEditOpen] = useState(false);
 	const [selected, setSelected] = useState<Map<string, MealPrepRecipe>>(
 		new Map(),
 	);
@@ -60,9 +82,15 @@ function CollectionPage() {
 
 	function reviewSelected() {
 		if (selected.size === 0) return;
-		openMealPrep(Array.from(selected.values()));
+		setMealPrepRecipes(Array.from(selected.values()));
+		setMealPrepOpen(true);
 		setSelected(new Map());
 		setSelecting(false);
+	}
+
+	function addToMealPrep(recipes: MealPrepCandidate[]) {
+		setMealPrepRecipes(recipes);
+		setMealPrepOpen(true);
 	}
 
 	return (
@@ -85,10 +113,10 @@ function CollectionPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								onClick={() => openMealPrep(collection.recipes)}
+								onClick={() => addToMealPrep(collection.recipes)}
 							>
-								<ShoppingCart className="size-4" />
-								Add collection
+								<CalendarPlus className="size-4" />
+								Add all to meal prep
 							</Button>
 							<Button
 								variant={selecting ? "secondary" : "outline"}
@@ -99,10 +127,14 @@ function CollectionPage() {
 								}}
 							>
 								<ListChecks className="size-4" />
-								{selecting ? "Cancel" : "Select recipes"}
+								{selecting ? "Cancel" : "Meal prep"}
 							</Button>
 						</>
 					)}
+					<Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+						<Pencil className="size-4" />
+						Edit
+					</Button>
 					<Button
 						variant="ghost"
 						size="sm"
@@ -202,10 +234,10 @@ function CollectionPage() {
 										variant="secondary"
 										size="icon"
 										className="absolute right-3 top-3 shadow"
-										onClick={() => openMealPrep([recipe])}
-										aria-label={`Add ${recipe.title} to shopping`}
+										onClick={() => addToMealPrep([recipe])}
+										aria-label={`Add ${recipe.title} to meal prep`}
 									>
-										<ShoppingCart className="size-4" />
+										<CalendarPlus className="size-4" />
 									</Button>
 								)}
 							</li>
@@ -219,7 +251,7 @@ function CollectionPage() {
 					<div className="flex-1">
 						<p className="font-medium">{selected.size} recipes selected</p>
 						<p className="text-xs text-muted-foreground">
-							Adjust quantities next
+							Save them in a named meal prep
 						</p>
 					</div>
 					<Button
@@ -230,11 +262,125 @@ function CollectionPage() {
 						Clear
 					</Button>
 					<Button onClick={reviewSelected}>
-						Set quantities
-						<ShoppingCart className="size-4" />
+						Add to meal prep
+						<CalendarPlus className="size-4" />
 					</Button>
 				</div>
 			)}
+			<AddToMealPrepDialog
+				open={mealPrepOpen}
+				onOpenChange={setMealPrepOpen}
+				recipes={mealPrepRecipes}
+			/>
+			<EditCollectionDialog
+				collection={collection}
+				open={editOpen}
+				onOpenChange={setEditOpen}
+			/>
 		</div>
+	);
+}
+
+function EditCollectionDialog({
+	collection,
+	open,
+	onOpenChange,
+}: {
+	collection: {
+		id: string;
+		name: string;
+		icon: string | null;
+		recipes: Array<{ id: string; title: string }>;
+	};
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}) {
+	const router = useRouter();
+	const [name, setName] = useState(collection.name);
+	const [icon, setIcon] = useState(collection.icon ?? "");
+	const update = useMutation({
+		mutationFn: () =>
+			updateCollectionFn({
+				data: { id: collection.id, name, icon: icon.trim() || null },
+			}),
+		onSuccess: async () => {
+			onOpenChange(false);
+			await router.invalidate();
+		},
+	});
+	const removeRecipe = useMutation({
+		mutationFn: (recipeId: string) =>
+			setRecipeInCollectionFn({
+				data: { collectionId: collection.id, recipeId, present: false },
+			}),
+		onSuccess: () => router.invalidate(),
+	});
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Edit collection</DialogTitle>
+				</DialogHeader>
+				<div className="space-y-4">
+					<div className="space-y-2">
+						<Label htmlFor="edit-collection-name">Name</Label>
+						<Input
+							id="edit-collection-name"
+							value={name}
+							onChange={(event) => setName(event.target.value)}
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="edit-collection-icon">Icon (emoji)</Label>
+						<Input
+							id="edit-collection-icon"
+							value={icon}
+							onChange={(event) => setIcon(event.target.value)}
+							maxLength={4}
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label>Recipes</Label>
+						{collection.recipes.length === 0 ? (
+							<p className="text-sm text-muted-foreground">
+								No recipes in this collection.
+							</p>
+						) : (
+							<ul className="max-h-52 space-y-2 overflow-auto">
+								{collection.recipes.map((recipe) => (
+									<li
+										key={recipe.id}
+										className="flex items-center gap-2 rounded-lg border p-2"
+									>
+										<span className="min-w-0 flex-1 truncate text-sm">
+											{recipe.title}
+										</span>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={() => removeRecipe.mutate(recipe.id)}
+										>
+											Remove
+										</Button>
+									</li>
+								))}
+							</ul>
+						)}
+						<p className="text-xs text-muted-foreground">
+							Add more recipes using the collection button on a recipe page.
+						</p>
+					</div>
+				</div>
+				<DialogFooter>
+					<Button
+						onClick={() => update.mutate()}
+						disabled={!name.trim() || update.isPending}
+					>
+						{update.isPending ? "Saving…" : "Save changes"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

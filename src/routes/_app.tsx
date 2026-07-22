@@ -5,7 +5,13 @@ import {
 	redirect,
 	useRouter,
 } from "@tanstack/react-router";
-import { ChefHat, Folder, LogOut, ShoppingCart } from "lucide-react";
+import {
+	CalendarRange,
+	ChefHat,
+	Folder,
+	LogOut,
+	ShoppingCart,
+} from "lucide-react";
 import { MealPrepProvider } from "../components/meal-prep/MealPrepProvider.tsx";
 import { UpdatePrompt } from "../components/shell/UpdatePrompt.tsx";
 import { getSessionFn } from "../server/auth/getSession.ts";
@@ -39,6 +45,7 @@ function AppLayout() {
 
 const NAV_ITEMS = [
 	{ to: "/recipes", label: "Recipes", icon: ChefHat, exact: true },
+	{ to: "/meal-prep", label: "Meal prep", icon: CalendarRange, exact: false },
 	{ to: "/collections", label: "Collections", icon: Folder, exact: false },
 	{ to: "/shopping", label: "Shopping", icon: ShoppingCart, exact: false },
 ] as const;
@@ -94,7 +101,7 @@ function LogoutButton() {
 function BottomNav() {
 	return (
 		<nav
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
 			aria-label="Primary"
 		>
 			{NAV_ITEMS.map((item) => (

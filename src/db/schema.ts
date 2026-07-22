@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+	integer,
+	primaryKey,
+	real,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 
 const id = () =>
 	text("id")
@@ -93,6 +99,30 @@ export const recipeCollections = sqliteTable("recipe_collections", {
 		.default(sql`(unixepoch())`),
 });
 
+export const mealPreps = sqliteTable("meal_preps", {
+	id: id(),
+	name: text().notNull(),
+	weekStart: text("week_start").notNull(),
+	...timestamps,
+});
+
+export const mealPrepRecipes = sqliteTable(
+	"meal_prep_recipes",
+	{
+		mealPrepId: text("meal_prep_id")
+			.notNull()
+			.references(() => mealPreps.id, { onDelete: "cascade" }),
+		recipeId: text("recipe_id")
+			.notNull()
+			.references(() => recipes.id, { onDelete: "cascade" }),
+		servings: integer().notNull().default(2),
+		addedAt: integer("added_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => [primaryKey({ columns: [table.mealPrepId, table.recipeId] })],
+);
+
 export const shoppingItems = sqliteTable("shopping_items", {
 	id: id(),
 	ingredientName: text("ingredient_name").notNull(),
@@ -123,5 +153,6 @@ export type NewRecipe = typeof recipes.$inferInsert;
 export type Ingredient = typeof ingredients.$inferSelect;
 export type Instruction = typeof instructions.$inferSelect;
 export type Collection = typeof collections.$inferSelect;
+export type MealPrep = typeof mealPreps.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type ShoppingItem = typeof shoppingItems.$inferSelect;
