@@ -2,6 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Copy, Minus, Plus, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import {
+	type MealPrepRecipe,
+	useMealPrep,
+} from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
 import {
@@ -22,7 +26,6 @@ import {
 	removeShoppingRecipeFn,
 	setAggregateCheckedFn,
 	setShoppingRecipeFn,
-	setShoppingRecipesFn,
 	toggleManualItemFn,
 } from "../../server/functions/shopping.ts";
 
@@ -39,6 +42,7 @@ function formatQty(q: number): string {
 function ShoppingPage() {
 	const initial = Route.useLoaderData();
 	const qc = useQueryClient();
+	const { openMealPrep } = useMealPrep();
 
 	const dataQ = useQuery({
 		queryKey: ["shopping"],
@@ -50,12 +54,6 @@ function ShoppingPage() {
 	const setRecipe = useMutation({
 		mutationFn: (vars: { recipeId: string; servings: number }) =>
 			setShoppingRecipeFn({ data: vars }),
-		onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
-	});
-
-	const addRecipes = useMutation({
-		mutationFn: (recipes: Array<{ recipeId: string; servings: number }>) =>
-			setShoppingRecipesFn({ data: { recipes } }),
 		onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
 	});
 
@@ -173,7 +171,7 @@ function ShoppingPage() {
 			<div className="flex flex-wrap gap-2">
 				<RecipePickerDialog
 					selectedIds={new Set(data.pickedRecipes.map((r) => r.recipeId))}
-					onAdd={(recipes) => addRecipes.mutateAsync(recipes)}
+					onAdd={openMealPrep}
 				/>
 				{remainingCount > 0 && (
 					<Button
@@ -393,14 +391,12 @@ function RecipePickerDialog({
 	onAdd,
 }: {
 	selectedIds: Set<string>;
-	onAdd: (
-		recipes: Array<{ recipeId: string; servings: number }>,
-	) => Promise<unknown>;
+	onAdd: (recipes: MealPrepRecipe[]) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [q, setQ] = useState("");
 	const [selections, setSelections] = useState<Map<string, number>>(new Map());
-	const [isAdding, setIsAdding] = useState(false);
+
 	const recipesQ = useQuery({
 		queryKey: ["recipes", { q }],
 		queryFn: () => listRecipesFn({ data: { q } }),
@@ -424,22 +420,21 @@ function RecipePickerDialog({
 		});
 	}
 
-	async function addSelected() {
+	function addSelected() {
 		if (selections.size === 0) return;
-		setIsAdding(true);
-		try {
-			await onAdd(
-				Array.from(selections, ([recipeId, servings]) => ({
-					recipeId,
-					servings,
-				})),
-			);
-			setSelections(new Map());
-			setQ("");
-			setOpen(false);
-		} finally {
-			setIsAdding(false);
-		}
+		const byId = new Map(
+			(recipesQ.data ?? []).map((recipe) => [recipe.id, recipe]),
+		);
+		onAdd(
+			Array.from(selections, ([recipeId, servings]) => {
+				const recipe = byId.get(recipeId);
+				if (!recipe) throw new Error("Selected recipe is no longer available");
+				return { ...recipe, servings };
+			}),
+		);
+		setSelections(new Map());
+		setQ("");
+		setOpen(false);
 	}
 
 	return (
@@ -447,7 +442,7 @@ function RecipePickerDialog({
 			open={open}
 			onOpenChange={(nextOpen) => {
 				setOpen(nextOpen);
-				if (!nextOpen && !isAdding) setSelections(new Map());
+				if (!nextOpen) setSelections(new Map());
 			}}
 		>
 			<DialogTrigger asChild>
@@ -541,12 +536,10 @@ function RecipePickerDialog({
 						</span>
 						<Button
 							type="button"
-							disabled={selections.size === 0 || isAdding}
+							disabled={selections.size === 0}
 							onClick={addSelected}
 						>
-							{isAdding
-								? "Adding…"
-								: `Add ${selections.size || ""} recipe${selections.size === 1 ? "" : "s"}`}
+							{`Continue with ${selections.size} recipe${selections.size === 1 ? "" : "s"}`}
 						</Button>
 					</div>
 				</div>

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
-import { recipes, recipeTags, tags } from "../../db/schema.ts";
+import { ingredients, recipes, recipeTags, tags } from "../../db/schema.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
 
 function normalizeTag(input: string): string {
@@ -94,7 +94,7 @@ export const listRecipesByTagFn = createServerFn({ method: "GET" })
 			.all()
 			.map((r) => r.id);
 		if (recipeIds.length === 0) return [];
-		return db
+		const rows = db
 			.select({
 				id: recipes.id,
 				title: recipes.title,
@@ -108,4 +108,20 @@ export const listRecipesByTagFn = createServerFn({ method: "GET" })
 			.from(recipes)
 			.where(inArray(recipes.id, recipeIds))
 			.all();
+		const counts = db
+			.select({
+				recipeId: ingredients.recipeId,
+				count: sql<number>`count(*)`.as("count"),
+			})
+			.from(ingredients)
+			.where(inArray(ingredients.recipeId, recipeIds))
+			.groupBy(ingredients.recipeId)
+			.all();
+		const countByRecipe = new Map(
+			counts.map((row) => [row.recipeId, Number(row.count)]),
+		);
+		return rows.map((row) => ({
+			...row,
+			ingredientCount: countByRecipe.get(row.id) ?? 0,
+		}));
 	});

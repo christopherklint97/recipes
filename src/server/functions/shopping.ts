@@ -190,6 +190,42 @@ export const setShoppingRecipesFn = createServerFn({ method: "POST" })
 		return { ok: true, count: selections.length };
 	});
 
+export const restoreShoppingRecipesFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		z.object({
+			restore: z
+				.array(
+					z.object({
+						recipeId: z.string().min(1),
+						servings: z.number().int().min(1).max(100).nullable(),
+					}),
+				)
+				.min(1)
+				.max(100),
+		}),
+	)
+	.handler(async ({ data }) => {
+		db.transaction((tx) => {
+			for (const item of data.restore) {
+				if (item.servings == null) {
+					tx.delete(shoppingRecipes)
+						.where(eq(shoppingRecipes.recipeId, item.recipeId))
+						.run();
+				} else {
+					tx.insert(shoppingRecipes)
+						.values({ recipeId: item.recipeId, servings: item.servings })
+						.onConflictDoUpdate({
+							target: shoppingRecipes.recipeId,
+							set: { servings: item.servings },
+						})
+						.run();
+				}
+			}
+		});
+		return { ok: true };
+	});
+
 export const removeShoppingRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
 	.validator(z.object({ recipeId: z.string().min(1) }))

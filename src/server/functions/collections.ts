@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
-import { collections, recipeCollections, recipes } from "../../db/schema.ts";
+import {
+	collections,
+	ingredients,
+	recipeCollections,
+	recipes,
+} from "../../db/schema.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
 
 export const listCollectionsFn = createServerFn({ method: "GET" })
@@ -51,11 +56,33 @@ export const getCollectionFn = createServerFn({ method: "GET" })
 							title: recipes.title,
 							description: recipes.description,
 							heroImage: recipes.heroImage,
+							servings: recipes.servings,
 						})
 						.from(recipes)
 						.where(inArray(recipes.id, recipeIds))
 						.all();
-		return { ...collection, recipes: items };
+		const counts =
+			recipeIds.length === 0
+				? []
+				: db
+						.select({
+							recipeId: ingredients.recipeId,
+							count: sql<number>`count(*)`.as("count"),
+						})
+						.from(ingredients)
+						.where(inArray(ingredients.recipeId, recipeIds))
+						.groupBy(ingredients.recipeId)
+						.all();
+		const countByRecipe = new Map(
+			counts.map((row) => [row.recipeId, Number(row.count)]),
+		);
+		return {
+			...collection,
+			recipes: items.map((item) => ({
+				...item,
+				ingredientCount: countByRecipe.get(item.id) ?? 0,
+			})),
+		};
 	});
 
 export const createCollectionFn = createServerFn({ method: "POST" })

@@ -6,6 +6,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { ChefHat, Folder, LogOut, ShoppingCart } from "lucide-react";
+import { MealPrepProvider } from "../components/meal-prep/MealPrepProvider.tsx";
 import { UpdatePrompt } from "../components/shell/UpdatePrompt.tsx";
 import { getSessionFn } from "../server/auth/getSession.ts";
 
@@ -25,12 +26,14 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
 	return (
-		<div className="min-h-dvh bg-background text-foreground pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
-			<TopNav />
-			<Outlet />
-			<BottomNav />
-			<UpdatePrompt />
-		</div>
+		<MealPrepProvider>
+			<div className="min-h-dvh bg-background text-foreground pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
+				<TopNav />
+				<Outlet />
+				<BottomNav />
+				<UpdatePrompt />
+			</div>
+		</MealPrepProvider>
 	);
 }
 

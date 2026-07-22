@@ -11,10 +11,12 @@ import {
 	FolderPlus,
 	Pencil,
 	Play,
+	ShoppingCart,
 	Trash2,
 	Users,
 } from "lucide-react";
 import { useState } from "react";
+import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -50,6 +52,7 @@ export const Route = createFileRoute("/_app/recipes/$id")({
 function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
 	const router = useRouter();
+	const { openMealPrep } = useMealPrep();
 
 	const del = useMutation({
 		mutationFn: () => deleteRecipeFn({ data: { id: recipe.id } }),
@@ -78,6 +81,24 @@ function RecipeDetailPage() {
 							<Play className="size-4" />
 							Cook
 						</Link>
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() =>
+							openMealPrep([
+								{
+									id: recipe.id,
+									title: recipe.title,
+									heroImage: recipe.heroImage,
+									servings: recipe.servings,
+									ingredientCount: recipe.ingredients.length,
+								},
+							])
+						}
+					>
+						<ShoppingCart className="size-4" />
+						Add to shopping
 					</Button>
 					<CollectionPickerButton recipeId={recipe.id} />
 					<Button asChild variant="outline" size="sm">

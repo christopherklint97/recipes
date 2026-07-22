@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq, inArray, like, or } from "drizzle-orm";
+import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
@@ -92,7 +92,7 @@ export const listRecipesFn = createServerFn({ method: "GET" })
 		const where = q
 			? or(like(recipes.title, `%${q}%`), like(recipes.description, `%${q}%`))
 			: undefined;
-		return db
+		const rows = db
 			.select({
 				id: recipes.id,
 				title: recipes.title,
@@ -107,6 +107,21 @@ export const listRecipesFn = createServerFn({ method: "GET" })
 			.where(where)
 			.orderBy(desc(recipes.createdAt))
 			.all();
+		const counts = db
+			.select({
+				recipeId: ingredientsTable.recipeId,
+				count: sql<number>`count(*)`.as("count"),
+			})
+			.from(ingredientsTable)
+			.groupBy(ingredientsTable.recipeId)
+			.all();
+		const countByRecipe = new Map(
+			counts.map((row) => [row.recipeId, Number(row.count)]),
+		);
+		return rows.map((row) => ({
+			...row,
+			ingredientCount: countByRecipe.get(row.id) ?? 0,
+		}));
 	});
 
 export const getRecipeFn = createServerFn({ method: "GET" })
