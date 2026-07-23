@@ -11,6 +11,7 @@ import {
 	recipeTags,
 	tags,
 } from "../../db/schema.ts";
+import { decodeHtmlText } from "../../lib/html-text.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
 
 function normalizeTag(input: string): string {
@@ -160,8 +161,22 @@ export const getRecipeFn = createServerFn({ method: "GET" })
 			.all();
 		return {
 			...recipe,
-			ingredients: ings,
-			instructions: inst,
+			title: decodeHtmlText(recipe.title),
+			description: recipe.description
+				? decodeHtmlText(recipe.description)
+				: recipe.description,
+			notes: recipe.notes ? decodeHtmlText(recipe.notes) : recipe.notes,
+			ingredients: ings.map((ingredient) => ({
+				...ingredient,
+				name: decodeHtmlText(ingredient.name),
+				note: ingredient.note
+					? decodeHtmlText(ingredient.note)
+					: ingredient.note,
+			})),
+			instructions: inst.map((instruction) => ({
+				...instruction,
+				text: decodeHtmlText(instruction.text),
+			})),
 			tags: tagRows.map((t) => t.name),
 		};
 	});
