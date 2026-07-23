@@ -57,6 +57,8 @@ export const getCollectionFn = createServerFn({ method: "GET" })
 							description: recipes.description,
 							heroImage: recipes.heroImage,
 							servings: recipes.servings,
+							prepMinutes: recipes.prepMinutes,
+							cookMinutes: recipes.cookMinutes,
 						})
 						.from(recipes)
 						.where(inArray(recipes.id, recipeIds))

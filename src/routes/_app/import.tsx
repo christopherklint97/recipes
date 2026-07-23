@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ImageIcon, LinkIcon, Share2 } from "lucide-react";
 import { useState } from "react";
+import { CollectionSelector } from "../../components/recipe/CollectionSelector.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
 	Card,
@@ -72,6 +73,7 @@ function ImportPage() {
 function UrlImport() {
 	const router = useRouter();
 	const [url, setUrl] = useState("");
+	const [collectionIds, setCollectionIds] = useState<string[]>([]);
 	const fetchPreview = useMutation({
 		mutationFn: (input: string) => importFromUrlFn({ data: { url: input } }),
 	});
@@ -138,6 +140,13 @@ function UrlImport() {
 								</p>
 							</div>
 						</div>
+						<div className="space-y-2">
+							<p className="text-sm font-medium">Save to collection</p>
+							<CollectionSelector
+								value={collectionIds}
+								onChange={setCollectionIds}
+							/>
+						</div>
 						<Button
 							className="w-full"
 							onClick={() =>
@@ -155,12 +164,13 @@ function UrlImport() {
 										costEstimateCents: null,
 										notes: null,
 										rawImport: null,
+										collectionIds,
 										ingredients: preview.ingredients,
 										instructions: preview.instructions,
 									},
 								})
 							}
-							disabled={create.isPending}
+							disabled={create.isPending || collectionIds.length === 0}
 						>
 							{create.isPending ? "Saving…" : "Save recipe"}
 						</Button>
@@ -174,6 +184,7 @@ function UrlImport() {
 function SocialImport() {
 	const router = useRouter();
 	const [url, setUrl] = useState("");
+	const [collectionIds, setCollectionIds] = useState<string[]>([]);
 	const fetchSocial = useMutation({
 		mutationFn: (input: string) => importFromSocialFn({ data: { url: input } }),
 	});
@@ -240,6 +251,13 @@ function SocialImport() {
 								readOnly
 							/>
 						)}
+						<div className="space-y-2">
+							<p className="text-sm font-medium">Save to collection</p>
+							<CollectionSelector
+								value={collectionIds}
+								onChange={setCollectionIds}
+							/>
+						</div>
 						<Button
 							className="w-full"
 							onClick={() =>
@@ -257,12 +275,13 @@ function SocialImport() {
 										costEstimateCents: null,
 										notes: preview.caption,
 										rawImport: preview.caption,
+										collectionIds,
 										ingredients: [],
 										instructions: [],
 									},
 								})
 							}
-							disabled={create.isPending}
+							disabled={create.isPending || collectionIds.length === 0}
 						>
 							{create.isPending ? "Saving…" : "Save & finish editing"}
 						</Button>
@@ -278,6 +297,7 @@ function PhotoImport() {
 	const [progress, setProgress] = useState<string | null>(null);
 	const [text, setText] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [collectionIds, setCollectionIds] = useState<string[]>([]);
 
 	async function runOcr(file: File) {
 		setError(null);
@@ -341,6 +361,13 @@ function PhotoImport() {
 							value={text}
 							onChange={(e) => setText(e.target.value)}
 						/>
+						<div className="space-y-2">
+							<p className="text-sm font-medium">Save to collection</p>
+							<CollectionSelector
+								value={collectionIds}
+								onChange={setCollectionIds}
+							/>
+						</div>
 						<Button
 							className="w-full"
 							onClick={() =>
@@ -358,12 +385,13 @@ function PhotoImport() {
 										costEstimateCents: null,
 										notes: text,
 										rawImport: text,
+										collectionIds,
 										ingredients: [],
 										instructions: [],
 									},
 								})
 							}
-							disabled={create.isPending}
+							disabled={create.isPending || collectionIds.length === 0}
 						>
 							{create.isPending ? "Saving…" : "Save & finish editing"}
 						</Button>

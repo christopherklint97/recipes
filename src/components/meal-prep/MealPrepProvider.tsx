@@ -32,6 +32,8 @@ export type MealPrepRecipe = {
 	heroImage?: string | null;
 	servings: number;
 	ingredientCount?: number;
+	prepMinutes?: number | null;
+	cookMinutes?: number | null;
 };
 
 type PlannedRecipe = MealPrepRecipe & {

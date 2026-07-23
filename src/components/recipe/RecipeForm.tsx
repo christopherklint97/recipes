@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card.tsx";
 import { Input } from "../ui/input.tsx";
 import { Label } from "../ui/label.tsx";
 import { Textarea } from "../ui/textarea.tsx";
+import { CollectionSelector } from "./CollectionSelector.tsx";
 
 const formSchema = z.object({
 	title: z.string().min(1, "Title is required").max(200),
@@ -22,6 +23,7 @@ const formSchema = z.object({
 	costEstimateCents: z.number().int().min(0).optional(),
 	notes: z.string().optional(),
 	sourceUrl: z.string().url().optional().or(z.literal("")),
+	collectionIds: z.array(z.string()),
 	ingredients: z.array(
 		z.object({
 			name: z.string().min(1),
@@ -53,6 +55,7 @@ const emptyValues: RecipeFormValues = {
 	costEstimateCents: undefined,
 	notes: "",
 	sourceUrl: "",
+	collectionIds: [],
 	ingredients: [],
 	instructions: [],
 	tagNames: [],
@@ -92,17 +95,26 @@ export function toRecipeInput(
 interface RecipeFormProps {
 	defaultValues?: Partial<RecipeFormValues>;
 	submitLabel: string;
+	requireCollection?: boolean;
 	onSubmit: (values: RecipeFormValues) => Promise<void> | void;
 }
 
 export function RecipeForm({
 	defaultValues,
 	submitLabel,
+	requireCollection = false,
 	onSubmit,
 }: RecipeFormProps) {
+	const submitSchema = requireCollection
+		? formSchema.extend({
+				collectionIds: z
+					.array(z.string())
+					.min(1, "Select at least one collection"),
+			})
+		: formSchema;
 	const form = useForm({
 		defaultValues: { ...emptyValues, ...defaultValues } as RecipeFormValues,
-		validators: { onSubmit: formSchema },
+		validators: { onSubmit: submitSchema },
 		onSubmit: async ({ value }) => onSubmit(value),
 	});
 
@@ -227,6 +239,30 @@ export function RecipeForm({
 					</form.Field>
 				</CardContent>
 			</Card>
+
+			{requireCollection && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Collection</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<p className="text-sm text-muted-foreground">
+							Choose at least one collection before saving this recipe.
+						</p>
+						<form.Field name="collectionIds">
+							{(field) => (
+								<div className="space-y-2">
+									<CollectionSelector
+										value={field.state.value}
+										onChange={(value) => field.handleChange(value)}
+									/>
+									<FieldError field={field} />
+								</div>
+							)}
+						</form.Field>
+					</CardContent>
+				</Card>
+			)}
 
 			<Card>
 				<CardHeader>

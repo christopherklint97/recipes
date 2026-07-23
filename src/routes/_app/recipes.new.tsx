@@ -16,7 +16,11 @@ function NewRecipePage() {
 	const create = useMutation({
 		mutationFn: (values: RecipeFormValues) =>
 			createRecipeFn({
-				data: { ...toRecipeInput(values), sourceType: "manual" },
+				data: {
+					...toRecipeInput(values),
+					sourceType: "manual",
+					collectionIds: values.collectionIds,
+				},
 			}),
 		onSuccess: ({ id }) => {
 			void router.navigate({ to: "/recipes/$id", params: { id } });
@@ -32,6 +36,7 @@ function NewRecipePage() {
 
 			<RecipeForm
 				submitLabel="Save recipe"
+				requireCollection
 				onSubmit={async (v) => {
 					await create.mutateAsync(v);
 				}}

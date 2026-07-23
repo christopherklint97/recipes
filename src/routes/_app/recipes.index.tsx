@@ -16,10 +16,16 @@ import {
 	type MealPrepCandidate,
 } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
 import type { MealPrepRecipe } from "../../components/meal-prep/MealPrepProvider.tsx";
+import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
 import { Input } from "../../components/ui/input.tsx";
+import {
+	DURATION_FILTERS,
+	type DurationFilter,
+	matchesDurationFilter,
+} from "../../lib/recipe-duration.ts";
 import { listRecipesFn } from "../../server/functions/recipes.ts";
 import { listRecipesByTagFn } from "../../server/functions/tags.ts";
 
@@ -40,6 +46,7 @@ function RecipesPage() {
 	const { tag } = Route.useSearch();
 	const navigate = useNavigate();
 	const [q, setQ] = useState("");
+	const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
 	const [selecting, setSelecting] = useState(false);
 	const [mealPrepRecipes, setMealPrepRecipes] = useState<MealPrepCandidate[]>(
 		[],
@@ -59,7 +66,7 @@ function RecipesPage() {
 		placeholderData: (prev) => prev,
 	});
 
-	const filtered =
+	const searched =
 		tag || q === ""
 			? recipes
 			: recipes.filter((recipe) =>
@@ -67,6 +74,9 @@ function RecipesPage() {
 						.toLowerCase()
 						.includes(q.toLowerCase()),
 				);
+	const filtered = searched.filter((recipe) =>
+		matchesDurationFilter(recipe, durationFilter),
+	);
 
 	function clearTag() {
 		void navigate({ to: "/recipes", search: {} as never });
@@ -140,15 +150,35 @@ function RecipesPage() {
 			</header>
 
 			<div className="space-y-3">
-				<div className="relative">
-					<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						value={q}
-						onChange={(event) => setQ(event.target.value)}
-						placeholder="Search recipes…"
-						className="pl-9"
-						disabled={!!tag}
-					/>
+				<div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							value={q}
+							onChange={(event) => setQ(event.target.value)}
+							placeholder="Search recipes…"
+							className="pl-9"
+							disabled={!!tag}
+						/>
+					</div>
+					<label className="sr-only" htmlFor="duration-filter">
+						Filter by total duration
+					</label>
+					<select
+						id="duration-filter"
+						value={durationFilter}
+						onChange={(event) =>
+							setDurationFilter(event.target.value as DurationFilter)
+						}
+						className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+					>
+						<option value="all">Any duration</option>
+						{DURATION_FILTERS.map((range) => (
+							<option key={range.value} value={range.value}>
+								{range.label}
+							</option>
+						))}
+					</select>
 				</div>
 
 				{tag && (
@@ -189,7 +219,9 @@ function RecipesPage() {
 			</div>
 
 			{filtered.length === 0 ? (
-				<EmptyState hasFilter={!!tag || q.length > 0} />
+				<EmptyState
+					hasFilter={!!tag || q.length > 0 || durationFilter !== "all"}
+				/>
 			) : (
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{filtered.map((recipe) => {
@@ -225,10 +257,16 @@ function RecipesPage() {
 													{recipe.description}
 												</p>
 											)}
-											<p className="text-xs text-muted-foreground">
-												{recipe.servings} servings · {recipe.ingredientCount}{" "}
-												ingredients
-											</p>
+											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+												<span>
+													{recipe.servings} servings · {recipe.ingredientCount}{" "}
+													ingredients
+												</span>
+												<RecipeDuration
+													prepMinutes={recipe.prepMinutes}
+													cookMinutes={recipe.cookMinutes}
+												/>
+											</div>
 										</div>
 									</button>
 								) : (
@@ -263,10 +301,16 @@ function RecipesPage() {
 													{recipe.description}
 												</p>
 											)}
-											<p className="text-xs text-muted-foreground">
-												{recipe.servings} servings · {recipe.ingredientCount}{" "}
-												ingredients
-											</p>
+											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+												<span>
+													{recipe.servings} servings · {recipe.ingredientCount}{" "}
+													ingredients
+												</span>
+												<RecipeDuration
+													prepMinutes={recipe.prepMinutes}
+													cookMinutes={recipe.cookMinutes}
+												/>
+											</div>
 										</div>
 									</>
 								)}

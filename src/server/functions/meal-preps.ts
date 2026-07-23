@@ -66,6 +66,8 @@ export const getMealPrepFn = createServerFn({ method: "GET" })
 				title: recipes.title,
 				description: recipes.description,
 				heroImage: recipes.heroImage,
+				prepMinutes: recipes.prepMinutes,
+				cookMinutes: recipes.cookMinutes,
 			})
 			.from(recipes)
 			.where(inArray(recipes.id, recipeIds))

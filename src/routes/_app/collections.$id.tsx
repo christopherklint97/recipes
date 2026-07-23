@@ -18,6 +18,7 @@ import {
 	type MealPrepCandidate,
 } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
 import type { MealPrepRecipe } from "../../components/meal-prep/MealPrepProvider.tsx";
+import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Checkbox } from "../../components/ui/checkbox.tsx";
 import {
@@ -198,10 +199,16 @@ function CollectionPage() {
 											{recipe.description}
 										</p>
 									)}
-									<p className="text-xs text-muted-foreground">
-										{recipe.servings} servings · {recipe.ingredientCount}{" "}
-										ingredients
-									</p>
+									<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+										<span>
+											{recipe.servings} servings · {recipe.ingredientCount}{" "}
+											ingredients
+										</span>
+										<RecipeDuration
+											prepMinutes={recipe.prepMinutes}
+											cookMinutes={recipe.cookMinutes}
+										/>
+									</div>
 								</div>
 							</>
 						);

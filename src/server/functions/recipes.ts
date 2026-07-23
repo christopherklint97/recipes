@@ -3,8 +3,10 @@ import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
+	collections,
 	ingredients as ingredientsTable,
 	instructions as instructionsTable,
+	recipeCollections,
 	recipes,
 	recipeTags,
 	tags,
@@ -74,6 +76,10 @@ const recipeInput = z.object({
 	ingredients: z.array(ingredientInput).default([]),
 	instructions: z.array(instructionInput).default([]),
 	tagNames: z.array(z.string()).default([]),
+});
+
+const createRecipeInput = recipeInput.extend({
+	collectionIds: z.array(z.string().min(1)).min(1),
 });
 
 export type RecipeInput = z.infer<typeof recipeInput>;
@@ -202,8 +208,17 @@ function writeRecipeChildren(
 
 export const createRecipeFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
-	.validator(recipeInput)
+	.validator(createRecipeInput)
 	.handler(async ({ data }) => {
+		const collectionIds = [...new Set(data.collectionIds)];
+		const existingCollections = db
+			.select({ id: collections.id })
+			.from(collections)
+			.where(inArray(collections.id, collectionIds))
+			.all();
+		if (existingCollections.length !== collectionIds.length) {
+			throw new Error("Select at least one valid collection");
+		}
 		const id = crypto.randomUUID();
 		db.insert(recipes)
 			.values({
@@ -224,6 +239,11 @@ export const createRecipeFn = createServerFn({ method: "POST" })
 			.run();
 		writeRecipeChildren(id, data.ingredients, data.instructions);
 		writeRecipeTags(id, data.tagNames);
+		db.insert(recipeCollections)
+			.values(
+				collectionIds.map((collectionId) => ({ recipeId: id, collectionId })),
+			)
+			.run();
 		return { id };
 	});
 
@@ -277,4 +297,4 @@ export const deleteRecipeFn = createServerFn({ method: "POST" })
 		return { id: data.id };
 	});
 
-export { ingredientInput, instructionInput, recipeInput };
+export { createRecipeInput, ingredientInput, instructionInput, recipeInput };

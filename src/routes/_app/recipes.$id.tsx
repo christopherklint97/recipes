@@ -6,6 +6,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import {
+	ArrowLeft,
 	CalendarPlus,
 	ChefHat,
 	Clock,
@@ -34,6 +35,10 @@ import {
 } from "../../components/ui/dialog.tsx";
 import { Separator } from "../../components/ui/separator.tsx";
 import {
+	formatRecipeDuration,
+	totalRecipeMinutes,
+} from "../../lib/recipe-duration.ts";
+import {
 	listCollectionsFn,
 	listCollectionsForRecipeFn,
 	setRecipeInCollectionFn,
@@ -61,11 +66,19 @@ function RecipeDetailPage() {
 		},
 	});
 
-	const totalMinutes =
-		(recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0) || null;
+	const totalMinutes = totalRecipeMinutes(recipe);
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-5">
+			<Button
+				variant="ghost"
+				size="sm"
+				className="-ml-2"
+				onClick={() => router.history.back()}
+			>
+				<ArrowLeft className="size-4" />
+				Back
+			</Button>
 			<div className="space-y-3">
 				<h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
 					{recipe.title}
@@ -141,7 +154,7 @@ function RecipeDetailPage() {
 				{totalMinutes && (
 					<span className="inline-flex items-center gap-1.5">
 						<Clock className="size-4" />
-						{totalMinutes} min
+						{formatRecipeDuration(totalMinutes)}
 					</span>
 				)}
 				{recipe.caloriesPerServing && (

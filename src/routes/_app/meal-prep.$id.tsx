@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
+import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
 	Dialog,
@@ -150,8 +151,13 @@ function MealPrepDetailPage() {
 								) : (
 									<div className="aspect-[4/3] w-full bg-muted" />
 								)}
-								<div className="p-4 pb-2">
+								<div className="space-y-1 p-4 pb-2">
 									<h2 className="line-clamp-2 font-semibold">{recipe.title}</h2>
+									<RecipeDuration
+										prepMinutes={recipe.prepMinutes}
+										cookMinutes={recipe.cookMinutes}
+										className="text-xs text-muted-foreground"
+									/>
 								</div>
 							</Link>
 							<div className="flex items-center gap-2 px-4 pb-4">

@@ -9,6 +9,34 @@ export function parseIsoDurationToMinutes(value: unknown): number | null {
 	return total > 0 ? total : null;
 }
 
+export function resolveImportedDurations(
+	prepTime: unknown,
+	cookTime: unknown,
+	totalTime: unknown,
+): { prepMinutes: number | null; cookMinutes: number | null } {
+	const prepMinutes = parseIsoDurationToMinutes(prepTime);
+	const cookMinutes = parseIsoDurationToMinutes(cookTime);
+	const totalMinutes = parseIsoDurationToMinutes(totalTime);
+
+	if (prepMinutes !== null && cookMinutes !== null) {
+		return { prepMinutes, cookMinutes };
+	}
+	if (totalMinutes === null) return { prepMinutes, cookMinutes };
+	if (prepMinutes !== null) {
+		return {
+			prepMinutes,
+			cookMinutes: Math.max(0, totalMinutes - prepMinutes) || null,
+		};
+	}
+	if (cookMinutes !== null) {
+		return {
+			prepMinutes: Math.max(0, totalMinutes - cookMinutes) || null,
+			cookMinutes,
+		};
+	}
+	return { prepMinutes: null, cookMinutes: totalMinutes };
+}
+
 export function parseServings(value: unknown): number | null {
 	if (typeof value === "number") return Math.max(1, Math.round(value));
 	if (typeof value === "string") {

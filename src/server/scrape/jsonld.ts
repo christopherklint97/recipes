@@ -1,8 +1,8 @@
 import { parseIngredientLine } from "../../lib/ingredients.ts";
 import {
 	parseCalories,
-	parseIsoDurationToMinutes,
 	parseServings,
+	resolveImportedDurations,
 } from "./duration.ts";
 
 export interface ScrapedRecipe {
@@ -200,8 +200,11 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
 	const title = asString(recipeNode.name) ?? "Untitled";
 	const description = asString(recipeNode.description);
 	const heroImage = asImageUrl(recipeNode.image);
-	const prepMinutes = parseIsoDurationToMinutes(recipeNode.prepTime);
-	const cookMinutes = parseIsoDurationToMinutes(recipeNode.cookTime);
+	const { prepMinutes, cookMinutes } = resolveImportedDurations(
+		recipeNode.prepTime,
+		recipeNode.cookTime,
+		recipeNode.totalTime,
+	);
 	const servings = parseServings(recipeNode.recipeYield) ?? 2;
 	const caloriesPerServing = parseCalories(recipeNode.nutrition);
 
