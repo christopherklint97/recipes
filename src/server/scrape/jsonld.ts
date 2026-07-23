@@ -1,3 +1,4 @@
+import { parseIngredientLine } from "../../lib/ingredients.ts";
 import {
 	parseCalories,
 	parseIsoDurationToMinutes,
@@ -157,52 +158,6 @@ function flattenIngredients(value: unknown): string[] {
 		return out;
 	}
 	return [];
-}
-
-function parseIngredientLine(line: string): {
-	quantity: number | null;
-	unit: string | null;
-	name: string;
-	note: string | null;
-} {
-	const trimmed = line.replace(/\s+/g, " ").trim();
-	const m = trimmed.match(
-		/^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|\d+\s+\d+\/\d+)\s*(.*)$/,
-	);
-	if (!m) return { quantity: null, unit: null, name: trimmed, note: null };
-
-	let qty: number | null = null;
-	const raw = m[1].replace(",", ".");
-	if (raw.includes("/")) {
-		const parts = raw.split(/\s+/);
-		let total = 0;
-		for (const p of parts) {
-			if (p.includes("/")) {
-				const [n, d] = p.split("/").map(Number);
-				if (n && d) total += n / d;
-			} else {
-				total += Number(p);
-			}
-		}
-		qty = total || null;
-	} else {
-		const n = Number(raw);
-		qty = Number.isFinite(n) ? n : null;
-	}
-
-	const rest = m[2].trim();
-	const unitMatch = rest.match(
-		/^(g|kg|mg|oz|lb|lbs|ml|l|tsp|tbsp|cup|cups|pinch|clove|cloves|pcs|piece|pieces|slice|slices)\b\.?\s*(.*)$/i,
-	);
-	if (unitMatch) {
-		return {
-			quantity: qty,
-			unit: unitMatch[1].toLowerCase().replace(/\.$/, ""),
-			name: unitMatch[2].trim() || rest,
-			note: null,
-		};
-	}
-	return { quantity: qty, unit: null, name: rest, note: null };
 }
 
 export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {

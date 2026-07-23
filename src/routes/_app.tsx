@@ -45,8 +45,8 @@ function AppLayout() {
 
 const NAV_ITEMS = [
 	{ to: "/recipes", label: "Recipes", icon: ChefHat, exact: true },
-	{ to: "/meal-prep", label: "Meal prep", icon: CalendarRange, exact: false },
 	{ to: "/collections", label: "Collections", icon: Folder, exact: false },
+	{ to: "/meal-prep", label: "Meal prep", icon: CalendarRange, exact: false },
 	{ to: "/shopping", label: "Shopping", icon: ShoppingCart, exact: false },
 ] as const;
 

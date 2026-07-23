@@ -1,7 +1,8 @@
 import { useForm } from "@tanstack/react-form";
 import { Trash2, Upload, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { parseQuantity } from "../../lib/ingredients.ts";
 import type { RecipeInput } from "../../server/functions/recipes.ts";
 import { Badge } from "../ui/badge.tsx";
 import { Button } from "../ui/button.tsx";
@@ -251,49 +252,76 @@ export function RecipeForm({
 					<form.Field name="ingredients" mode="array">
 						{(field) => (
 							<div className="space-y-3">
-								{field.state.value.map((_, index) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: ingredient rows reorder by index
-									<div key={index} className="grid grid-cols-12 gap-2">
-										<form.Field name={`ingredients[${index}].quantity`}>
-											{(sub) => (
-												<Input
-													className="col-span-2"
-													inputMode="decimal"
-													placeholder="Qty"
-													value={sub.state.value ?? ""}
-													onChange={(e) => {
-														const v = e.target.value;
-														sub.handleChange(v === "" ? null : Number(v));
-													}}
-												/>
-											)}
-										</form.Field>
-										<form.Field name={`ingredients[${index}].unit`}>
-											{(sub) => (
-												<Input
-													className="col-span-2"
-													placeholder="Unit"
-													value={sub.state.value ?? ""}
-													onChange={(e) => sub.handleChange(e.target.value)}
-												/>
-											)}
-										</form.Field>
-										<form.Field name={`ingredients[${index}].name`}>
-											{(sub) => (
-												<Input
-													className="col-span-7"
-													placeholder="Ingredient"
-													value={sub.state.value}
-													onChange={(e) => sub.handleChange(e.target.value)}
-												/>
-											)}
-										</form.Field>
+								{field.state.value.map((row, index) => (
+									<div
+										// biome-ignore lint/suspicious/noArrayIndexKey: ingredient rows reorder by index
+										key={index}
+										className="relative grid grid-cols-2 gap-3 rounded-lg border p-3 sm:grid-cols-12 sm:items-end sm:gap-2 sm:border-0 sm:p-0"
+									>
+										<div className="col-span-2 space-y-1.5 pr-10 sm:col-span-6 sm:pr-0">
+											<Label htmlFor={`ingredient-${index}-name`}>
+												Ingredient
+											</Label>
+											<Input
+												id={`ingredient-${index}-name`}
+												aria-label={`Ingredient name ${index + 1}`}
+												placeholder="Ingredient name"
+												value={row.name}
+												onChange={(e) =>
+													field.setValue((rows) =>
+														rows.map((current, rowIndex) =>
+															rowIndex === index
+																? { ...current, name: e.target.value }
+																: current,
+														),
+													)
+												}
+											/>
+										</div>
+										<div className="space-y-1.5 sm:col-span-2">
+											<Label htmlFor={`ingredient-${index}-quantity`}>
+												Quantity
+											</Label>
+											<IngredientQuantityInput
+												id={`ingredient-${index}-quantity`}
+												ingredientName={row.name}
+												value={row.quantity ?? null}
+												onChange={(quantity) =>
+													field.setValue((rows) =>
+														rows.map((current, rowIndex) =>
+															rowIndex === index
+																? { ...current, quantity }
+																: current,
+														),
+													)
+												}
+											/>
+										</div>
+										<div className="space-y-1.5 sm:col-span-3">
+											<Label htmlFor={`ingredient-${index}-unit`}>Unit</Label>
+											<Input
+												id={`ingredient-${index}-unit`}
+												aria-label={`Unit for ${row.name || `ingredient ${index + 1}`}`}
+												placeholder="e.g. g, ml, tbsp"
+												value={row.unit ?? ""}
+												onChange={(e) =>
+													field.setValue((rows) =>
+														rows.map((current, rowIndex) =>
+															rowIndex === index
+																? { ...current, unit: e.target.value }
+																: current,
+														),
+													)
+												}
+											/>
+										</div>
 										<Button
 											type="button"
 											variant="ghost"
 											size="icon"
-											className="col-span-1"
+											className="absolute right-2 top-2 sm:static sm:col-span-1"
 											onClick={() => field.removeValue(index)}
+											aria-label={`Remove ${row.name || `ingredient ${index + 1}`}`}
 										>
 											<Trash2 className="size-4" />
 										</Button>
@@ -448,6 +476,49 @@ function FieldError({
 				.filter(Boolean)
 				.join(", ")}
 		</p>
+	);
+}
+
+function IngredientQuantityInput({
+	id,
+	ingredientName,
+	value,
+	onChange,
+}: {
+	id: string;
+	ingredientName: string;
+	value: number | null;
+	onChange: (value: number | null) => void;
+}) {
+	const formattedValue = value == null ? "" : String(value);
+	const [draft, setDraft] = useState(formattedValue);
+
+	useEffect(() => {
+		setDraft(formattedValue);
+	}, [formattedValue]);
+
+	return (
+		<Input
+			id={id}
+			aria-label={`Quantity for ${ingredientName || "ingredient"}`}
+			inputMode="decimal"
+			placeholder="e.g. 1 1/2"
+			value={draft}
+			onChange={(e) => {
+				const next = e.target.value;
+				setDraft(next);
+				if (next.trim() === "") {
+					onChange(null);
+					return;
+				}
+				const parsed = parseQuantity(next);
+				if (parsed !== null) onChange(parsed);
+			}}
+			onBlur={() => {
+				const parsed = parseQuantity(draft);
+				if (draft.trim() !== "" && parsed === null) setDraft(formattedValue);
+			}}
+		/>
 	);
 }
 
