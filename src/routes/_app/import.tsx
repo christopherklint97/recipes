@@ -3,6 +3,11 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ImageIcon, LinkIcon, Share2 } from "lucide-react";
 import { useState } from "react";
 import { CollectionSelector } from "../../components/recipe/CollectionSelector.tsx";
+import {
+	RecipeForm,
+	type RecipeFormValues,
+	toRecipeInput,
+} from "../../components/recipe/RecipeForm.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
 	Card,
@@ -19,6 +24,7 @@ import {
 	TabsTrigger,
 } from "../../components/ui/tabs.tsx";
 import { Textarea } from "../../components/ui/textarea.tsx";
+import { parsePhotoRecipeText } from "../../lib/photo-recipe.ts";
 import {
 	importFromSocialFn,
 	importFromUrlFn,
@@ -295,109 +301,194 @@ function SocialImport() {
 function PhotoImport() {
 	const router = useRouter();
 	const [progress, setProgress] = useState<string | null>(null);
-	const [text, setText] = useState("");
+	const [parsed, setParsed] = useState<ReturnType<
+		typeof parsePhotoRecipeText
+	> | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [collectionIds, setCollectionIds] = useState<string[]>([]);
+
+	async function readQrCode(file: File): Promise<string | null> {
+		const [{ default: jsQR }, bitmap] = await Promise.all([
+			import("jsqr"),
+			createImageBitmap(file),
+		]);
+		const maxSide = 1800;
+		const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+		const canvas = document.createElement("canvas");
+		canvas.width = Math.round(bitmap.width * scale);
+		canvas.height = Math.round(bitmap.height * scale);
+		const context = canvas.getContext("2d", { willReadFrequently: true });
+		if (!context) return null;
+		context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+		bitmap.close();
+		const image = context.getImageData(0, 0, canvas.width, canvas.height);
+		return jsQR(image.data, image.width, image.height)?.data ?? null;
+	}
 
 	async function runOcr(file: File) {
 		setError(null);
-		setText("");
-		setProgress("Loading OCR engine…");
+		setParsed(null);
+		setProgress("Checking the photo for a recipe link…");
 		try {
+			const qrUrl = await readQrCode(file).catch(() => null);
+			if (qrUrl && /^https?:\/\//i.test(qrUrl)) {
+				setProgress("Found a recipe link. Importing the original recipe…");
+				const imported = await importFromUrlFn({ data: { url: qrUrl } });
+				if (imported.ok) {
+					setParsed({
+						title: imported.recipe.title,
+						sourceType: "url",
+						description: imported.recipe.description,
+						sourceUrl: imported.recipe.sourceUrl,
+						heroImage: imported.recipe.heroImage,
+						servings: imported.recipe.servings,
+						prepMinutes: imported.recipe.prepMinutes,
+						cookMinutes: imported.recipe.cookMinutes,
+						caloriesPerServing: imported.recipe.caloriesPerServing,
+						ingredients: imported.recipe.ingredients,
+						instructions: imported.recipe.instructions,
+						rawText: `Recipe QR code: ${qrUrl}`,
+					});
+					setProgress(null);
+					return;
+				}
+			}
+
+			setProgress("Loading Swedish OCR engine…");
 			const tesseract = await import("tesseract.js");
-			const { data } = await tesseract.recognize(file, "eng", {
-				logger: (m: { status?: string; progress?: number }) => {
-					if (m.status && typeof m.progress === "number") {
-						setProgress(`${m.status} (${Math.round(m.progress * 100)}%)`);
-					}
+			const worker = await tesseract.createWorker(
+				["swe", "eng"],
+				tesseract.OEM.LSTM_ONLY,
+				{
+					logger: (message) => {
+						if (message.status && typeof message.progress === "number") {
+							setProgress(
+								`${message.status} (${Math.round(message.progress * 100)}%)`,
+							);
+						}
+					},
 				},
-			});
-			setText(data.text.trim());
+			);
+			try {
+				await worker.setParameters({
+					tessedit_pageseg_mode: tesseract.PSM.AUTO,
+					preserve_interword_spaces: "1",
+				});
+				const { data } = await worker.recognize(
+					file,
+					{ rotateAuto: true },
+					{ text: true, blocks: true },
+				);
+				const blockText = data.blocks
+					?.map((block) => block.text.trim())
+					.filter(Boolean)
+					.join("\n");
+				setParsed(parsePhotoRecipeText(blockText || data.text));
+			} finally {
+				await worker.terminate();
+			}
 			setProgress(null);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "OCR failed");
+		} catch (caught) {
+			setError(
+				caught instanceof Error ? caught.message : "Photo analysis failed",
+			);
 			setProgress(null);
 		}
 	}
 
 	const create = useMutation({
-		mutationFn: createRecipeFn,
+		mutationFn: (values: RecipeFormValues) => {
+			if (!parsed) throw new Error("Scan a recipe first");
+			return createRecipeFn({
+				data: {
+					...toRecipeInput(values),
+					sourceType: parsed.sourceType,
+					rawImport: parsed.rawText,
+					collectionIds: values.collectionIds,
+				},
+			});
+		},
 		onSuccess: ({ id }) => {
-			void router.navigate({ to: "/recipes/$id/edit", params: { id } });
+			void router.navigate({ to: "/recipes/$id", params: { id } });
 		},
 	});
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>From a photograph</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<p className="text-sm text-muted-foreground">
-					Photograph a cookbook page or handwritten note. The text will be
-					extracted on this device — no upload to a third party.
-				</p>
-				<div className="space-y-2">
-					<Label htmlFor="ocr-file">Photo</Label>
-					<Input
-						id="ocr-file"
-						type="file"
-						accept="image/*"
-						onChange={(e) => {
-							const f = e.target.files?.[0];
-							if (f) void runOcr(f);
-						}}
-					/>
-				</div>
-				{progress && (
-					<p className="text-sm text-muted-foreground">{progress}</p>
-				)}
-				{error && <p className="text-sm text-destructive">{error}</p>}
-				{text && (
-					<div className="space-y-3">
-						<Textarea
-							className="font-mono text-sm"
-							rows={10}
-							value={text}
-							onChange={(e) => setText(e.target.value)}
+		<div className="space-y-6">
+			<Card>
+				<CardHeader>
+					<CardTitle>From a photograph</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<p className="text-sm text-muted-foreground">
+						The importer first checks for a QR recipe link, then falls back to
+						Swedish and English layout-aware OCR. Extracted content is separated
+						into editable fields before anything is saved.
+					</p>
+					<div className="space-y-2">
+						<Label htmlFor="ocr-file">Recipe photograph</Label>
+						<Input
+							id="ocr-file"
+							type="file"
+							accept="image/*"
+							onChange={(event) => {
+								const file = event.target.files?.[0];
+								if (file) void runOcr(file);
+							}}
 						/>
-						<div className="space-y-2">
-							<p className="text-sm font-medium">Save to collection</p>
-							<CollectionSelector
-								value={collectionIds}
-								onChange={setCollectionIds}
-							/>
-						</div>
-						<Button
-							className="w-full"
-							onClick={() =>
-								create.mutate({
-									data: {
-										title: "Imported from photo",
-										description: null,
-										sourceUrl: null,
-										sourceType: "ocr",
-										heroImage: null,
-										servings: 2,
-										prepMinutes: null,
-										cookMinutes: null,
-										caloriesPerServing: null,
-										costEstimateCents: null,
-										notes: text,
-										rawImport: text,
-										collectionIds,
-										ingredients: [],
-										instructions: [],
-									},
-								})
-							}
-							disabled={create.isPending || collectionIds.length === 0}
-						>
-							{create.isPending ? "Saving…" : "Save & finish editing"}
-						</Button>
 					</div>
-				)}
-			</CardContent>
-		</Card>
+					{progress && (
+						<p className="text-sm text-muted-foreground">{progress}</p>
+					)}
+					{error && <p className="text-sm text-destructive">{error}</p>}
+					{parsed && (
+						<div className="rounded-lg border bg-muted/30 p-4 text-sm">
+							<p className="font-medium">Extraction complete</p>
+							<p className="text-muted-foreground">
+								Found {parsed.ingredients.length} ingredients and{" "}
+								{parsed.instructions.length} instruction steps. Review and
+								correct the fields below before saving.
+							</p>
+							<details className="mt-3">
+								<summary className="cursor-pointer text-muted-foreground">
+									Show source details
+								</summary>
+								<pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-background p-3 text-xs">
+									{parsed.rawText}
+								</pre>
+							</details>
+						</div>
+					)}
+				</CardContent>
+			</Card>
+
+			{parsed && (
+				<RecipeForm
+					defaultValues={{
+						title: parsed.title,
+						description: parsed.description ?? "",
+						sourceUrl: parsed.sourceUrl ?? "",
+						heroImage: parsed.heroImage ?? "",
+						servings: parsed.servings,
+						prepMinutes: parsed.prepMinutes ?? undefined,
+						cookMinutes: parsed.cookMinutes ?? undefined,
+						caloriesPerServing: parsed.caloriesPerServing ?? undefined,
+						ingredients: parsed.ingredients.map((ingredient) => ({
+							...ingredient,
+							unit: ingredient.unit ?? "",
+							note: ingredient.note ?? "",
+						})),
+						instructions: parsed.instructions.map((instruction) => ({
+							...instruction,
+							durationSeconds: instruction.durationSeconds ?? undefined,
+						})),
+					}}
+					requireCollection
+					submitLabel={create.isPending ? "Saving…" : "Save recipe"}
+					onSubmit={async (values) => {
+						await create.mutateAsync(values);
+					}}
+				/>
+			)}
+		</div>
 	);
 }

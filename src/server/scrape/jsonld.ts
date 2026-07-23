@@ -1,3 +1,4 @@
+import { decodeHtmlText } from "../../lib/html-text.ts";
 import { parseIngredientLine } from "../../lib/ingredients.ts";
 import {
 	parseCalories,
@@ -32,23 +33,6 @@ export interface ScrapedRecipe {
 const FETCH_TIMEOUT_MS = 12_000;
 const USER_AGENT =
 	"Mozilla/5.0 (compatible; RecipesBot/1.0; +https://recipes.christopherklint.com)";
-
-function decodeHtmlEntities(s: string): string {
-	return s
-		.replace(/&amp;/g, "&")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&apos;/g, "'")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&nbsp;/g, " ")
-		.replace(/&#x([0-9a-fA-F]+);/g, (_, h) =>
-			String.fromCodePoint(Number.parseInt(h, 16)),
-		)
-		.replace(/&#(\d+);/g, (_, n) =>
-			String.fromCodePoint(Number.parseInt(n, 10)),
-		);
-}
 
 function extractLdJsonScripts(html: string): string[] {
 	const out: string[] = [];
@@ -99,7 +83,7 @@ function findRecipeNode(value: unknown): Record<string, unknown> | null {
 }
 
 function asString(v: unknown): string | null {
-	if (typeof v === "string") return v.trim() || null;
+	if (typeof v === "string") return decodeHtmlText(v).trim() || null;
 	if (Array.isArray(v) && v.length > 0) return asString(v[0]);
 	if (v && typeof v === "object") {
 		const obj = v as Record<string, unknown>;
@@ -125,7 +109,7 @@ function asImageUrl(v: unknown): string | null {
 
 function flattenInstructions(value: unknown): string[] {
 	if (typeof value === "string") {
-		return value
+		return decodeHtmlText(value)
 			.split(/(?:\r?\n)+|(?<=[.!?])\s{2,}/)
 			.map((s) => s.trim())
 			.filter((s) => s.length > 0);
@@ -148,7 +132,8 @@ function flattenInstructions(value: unknown): string[] {
 }
 
 function flattenIngredients(value: unknown): string[] {
-	if (typeof value === "string") return [value.trim()].filter(Boolean);
+	if (typeof value === "string")
+		return [decodeHtmlText(value).trim()].filter(Boolean);
 	if (Array.isArray(value)) {
 		const out: string[] = [];
 		for (const v of value) {
@@ -186,11 +171,17 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
 	let recipeNode: Record<string, unknown> | null = null;
 	for (const raw of scripts) {
 		try {
-			const parsed = JSON.parse(decodeHtmlEntities(raw));
+			const parsed = JSON.parse(raw);
 			recipeNode = findRecipeNode(parsed);
 			if (recipeNode) break;
 		} catch {
-			// try next
+			try {
+				const parsed = JSON.parse(decodeHtmlText(raw));
+				recipeNode = findRecipeNode(parsed);
+				if (recipeNode) break;
+			} catch {
+				// try next
+			}
 		}
 	}
 	if (!recipeNode) {
