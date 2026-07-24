@@ -109,6 +109,11 @@ function BottomNav() {
 					key={item.to}
 					to={item.to}
 					activeOptions={item.exact ? { exact: true } : undefined}
+					onClick={
+						item.to === "/recipes"
+							? () => window.scrollTo({ top: 0, behavior: "smooth" })
+							: undefined
+					}
 					className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground data-[status=active]:text-foreground"
 				>
 					<item.icon className="size-5" />
