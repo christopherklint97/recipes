@@ -10,6 +10,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { aggregateRecipeServings } from "../../lib/planning.ts";
 import {
 	listShoppingFn,
 	restoreShoppingRecipesFn,
@@ -71,9 +72,7 @@ export function MealPrepProvider({ children }: { children: ReactNode }) {
 	});
 
 	const openMealPrep = useCallback((recipes: MealPrepRecipe[]) => {
-		const unique = Array.from(
-			new Map(recipes.map((recipe) => [recipe.id, recipe])).values(),
-		);
+		const unique = aggregateRecipeServings(recipes);
 		setPlanned(
 			unique.map((recipe) => ({
 				...recipe,

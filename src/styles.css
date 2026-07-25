@@ -205,14 +205,14 @@ body::after {
   mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
 }
 
-a {
+a:not([data-slot='button']):not([data-slot='badge']) {
   color: var(--lagoon-deep);
   text-decoration-color: rgba(50, 143, 151, 0.4);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
-a:hover {
+a:not([data-slot='button']):not([data-slot='badge']):hover {
   color: #246f76;
 }
 

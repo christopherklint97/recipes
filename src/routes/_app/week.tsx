@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CalendarDays,
 	ChefHat,
+	Pencil,
 	Plus,
 	ShoppingCart,
 	Trash2,
@@ -10,7 +11,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { AddToMealPrepDialog } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
-import { ManualMealItemDialog } from "../../components/meal-prep/ManualMealItemDialog.tsx";
+import {
+	ManualMealItemDialog,
+	type ManualMealItemValue,
+} from "../../components/meal-prep/ManualMealItemDialog.tsx";
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -48,6 +52,7 @@ function CurrentWeekPage() {
 	const [manualPlan, setManualPlan] = useState<{
 		id: string;
 		name: string;
+		item?: ManualMealItemValue;
 	} | null>(null);
 	const { data = initial } = useQuery({
 		queryKey: ["current-week", initial.weekStart],
@@ -206,16 +211,33 @@ function CurrentWeekPage() {
 													Quick item
 												</p>
 											</div>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="size-11 sm:size-9"
-												onClick={() => removeManual.mutate(item.id)}
-												disabled={removeManual.isPending}
-												aria-label={`Remove ${item.title}`}
-											>
-												<Trash2 className="size-4" />
-											</Button>
+											<div className="flex gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+													onClick={() =>
+														setManualPlan({
+															id: plan.id,
+															name: plan.name,
+															item,
+														})
+													}
+													aria-label={`Edit ${item.title}`}
+												>
+													<Pencil className="size-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+													onClick={() => removeManual.mutate(item.id)}
+													disabled={removeManual.isPending}
+													aria-label={`Remove ${item.title}`}
+												>
+													<Trash2 className="size-4" />
+												</Button>
+											</div>
 										</li>
 									))}
 								</ul>
@@ -229,6 +251,7 @@ function CurrentWeekPage() {
 				<ManualMealItemDialog
 					mealPrepId={manualPlan.id}
 					mealPrepName={manualPlan.name}
+					item={manualPlan.item}
 					open={true}
 					onOpenChange={(open) => {
 						if (!open) setManualPlan(null);

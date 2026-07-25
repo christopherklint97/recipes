@@ -15,7 +15,10 @@ import {
 	Utensils,
 } from "lucide-react";
 import { useState } from "react";
-import { ManualMealItemDialog } from "../../components/meal-prep/ManualMealItemDialog.tsx";
+import {
+	ManualMealItemDialog,
+	type ManualMealItemValue,
+} from "../../components/meal-prep/ManualMealItemDialog.tsx";
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Button } from "../../components/ui/button.tsx";
@@ -59,6 +62,7 @@ function MealPrepDetailPage() {
 	const { openMealPrep } = useMealPrep();
 	const [editOpen, setEditOpen] = useState(false);
 	const [manualOpen, setManualOpen] = useState(false);
+	const [manualItem, setManualItem] = useState<ManualMealItemValue>();
 	const { data } = useQuery({
 		queryKey: ["meal-prep", initial.id],
 		queryFn: () => getMealPrepFn({ data: { id: initial.id } }),
@@ -124,7 +128,13 @@ function MealPrepDetailPage() {
 							<Plus className="size-4" /> Add recipes
 						</Link>
 					</Button>
-					<Button variant="outline" onClick={() => setManualOpen(true)}>
+					<Button
+						variant="outline"
+						onClick={() => {
+							setManualItem(undefined);
+							setManualOpen(true);
+						}}
+					>
 						<Utensils className="size-4" /> Quick item
 					</Button>
 					<Button variant="outline" onClick={() => setEditOpen(true)}>
@@ -181,16 +191,30 @@ function MealPrepDetailPage() {
 								<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
 									Quick item
 								</span>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-11 sm:size-9"
-									onClick={() => removeManual.mutate(item.id)}
-									disabled={removeManual.isPending}
-									aria-label={`Remove ${item.title}`}
-								>
-									<Trash2 className="size-4" />
-								</Button>
+								<div className="flex gap-1">
+									<Button
+										variant="ghost"
+										size="icon"
+										className="size-11 sm:size-9"
+										onClick={() => {
+											setManualItem(item);
+											setManualOpen(true);
+										}}
+										aria-label={`Edit ${item.title}`}
+									>
+										<Pencil className="size-4" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="size-11 sm:size-9"
+										onClick={() => removeManual.mutate(item.id)}
+										disabled={removeManual.isPending}
+										aria-label={`Remove ${item.title}`}
+									>
+										<Trash2 className="size-4" />
+									</Button>
+								</div>
 							</div>
 						</li>
 					))}
@@ -278,8 +302,12 @@ function MealPrepDetailPage() {
 			<ManualMealItemDialog
 				mealPrepId={mealPrep.id}
 				mealPrepName={mealPrep.name}
+				item={manualItem}
 				open={manualOpen}
-				onOpenChange={setManualOpen}
+				onOpenChange={(open) => {
+					setManualOpen(open);
+					if (!open) setManualItem(undefined);
+				}}
 			/>
 			<EditMealPrepDialog
 				mealPrep={mealPrep}

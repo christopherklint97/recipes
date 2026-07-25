@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { addManualMealPrepItemFn } from "../../server/functions/meal-preps.ts";
+import {
+	addManualMealPrepItemFn,
+	updateManualMealPrepItemFn,
+} from "../../server/functions/meal-preps.ts";
 import { Button } from "../ui/button.tsx";
 import {
 	Dialog,
@@ -13,14 +16,23 @@ import {
 import { Input } from "../ui/input.tsx";
 import { Label } from "../ui/label.tsx";
 
+export type ManualMealItemValue = {
+	id: string;
+	title: string;
+	amount: string | null;
+	note: string | null;
+};
+
 export function ManualMealItemDialog({
 	mealPrepId,
 	mealPrepName,
+	item,
 	open,
 	onOpenChange,
 }: {
 	mealPrepId: string;
 	mealPrepName: string;
+	item?: ManualMealItemValue;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
@@ -28,18 +40,27 @@ export function ManualMealItemDialog({
 	const [title, setTitle] = useState("");
 	const [amount, setAmount] = useState("");
 	const [note, setNote] = useState("");
+	const editing = Boolean(item);
+
 	useEffect(() => {
-		if (!open) {
-			setTitle("");
-			setAmount("");
-			setNote("");
-		}
-	}, [open]);
-	const add = useMutation({
-		mutationFn: () =>
-			addManualMealPrepItemFn({
-				data: { mealPrepId, title, amount: amount || null, note: note || null },
-			}),
+		if (!open) return;
+		setTitle(item?.title ?? "");
+		setAmount(item?.amount ?? "");
+		setNote(item?.note ?? "");
+	}, [open, item]);
+
+	const save = useMutation({
+		mutationFn: () => {
+			const data = {
+				mealPrepId,
+				title,
+				amount: amount || null,
+				note: note || null,
+			};
+			return item
+				? updateManualMealPrepItemFn({ data: { ...data, id: item.id } })
+				: addManualMealPrepItemFn({ data });
+		},
 		onSuccess: async () => {
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: ["meal-prep", mealPrepId] }),
@@ -49,14 +70,19 @@ export function ManualMealItemDialog({
 			onOpenChange(false);
 		},
 	});
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
-					<DialogTitle>Add a planned item</DialogTitle>
+					<DialogTitle>
+						{editing ? "Edit planned item" : "Add a planned item"}
+					</DialogTitle>
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">
-					Add food to {mealPrepName} without creating a saved recipe.
+					{editing
+						? `Update this item in ${mealPrepName}.`
+						: `Add food to ${mealPrepName} without creating a saved recipe.`}
 				</p>
 				<div className="space-y-4">
 					<div className="space-y-2">
@@ -100,18 +126,24 @@ export function ManualMealItemDialog({
 							maxLength={300}
 						/>
 					</div>
-					{add.isError && (
+					{save.isError && (
 						<p role="alert" className="text-sm text-destructive">
-							Could not add the item. Please try again.
+							Could not {editing ? "save the changes" : "add the item"}. Please
+							try again.
 						</p>
 					)}
 				</div>
 				<DialogFooter>
 					<Button
-						onClick={() => add.mutate()}
-						disabled={!title.trim() || add.isPending}
+						onClick={() => save.mutate()}
+						disabled={!title.trim() || save.isPending}
 					>
-						<Plus className="size-4" /> {add.isPending ? "Adding…" : "Add item"}
+						{editing ? (
+							<Pencil className="size-4" />
+						) : (
+							<Plus className="size-4" />
+						)}
+						{save.isPending ? "Saving…" : editing ? "Save changes" : "Add item"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq, exists, inArray, like, or, sql } from "drizzle-orm";
+import { desc, eq, exists, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
@@ -12,6 +12,7 @@ import {
 	tags,
 } from "../../db/schema.ts";
 import { decodeHtmlText } from "../../lib/html-text.ts";
+import { literalLikeSubstring } from "../../lib/planning.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
 
 function normalizeTag(input: string): string {
@@ -96,16 +97,17 @@ export const listRecipesFn = createServerFn({ method: "GET" })
 	)
 	.handler(async ({ data }) => {
 		const q = data?.q?.trim();
+		const pattern = q ? literalLikeSubstring(q) : undefined;
 		const where = q
 			? or(
-					like(recipes.title, `%${q}%`),
-					like(recipes.description, `%${q}%`),
+					sql`${recipes.title} like ${pattern} escape ${"\\"}`,
+					sql`${recipes.description} like ${pattern} escape ${"\\"}`,
 					exists(
 						db
 							.select({ id: ingredientsTable.id })
 							.from(ingredientsTable)
 							.where(
-								sql`${ingredientsTable.recipeId} = ${recipes.id} and ${ingredientsTable.name} like ${`%${q}%`}`,
+								sql`${ingredientsTable.recipeId} = ${recipes.id} and ${ingredientsTable.name} like ${pattern} escape ${"\\"}`,
 							),
 					),
 				)
