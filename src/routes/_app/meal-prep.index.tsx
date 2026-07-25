@@ -90,8 +90,8 @@ function MealPrepIndexPage() {
 										</p>
 										<p className="text-sm text-muted-foreground">
 											{formatWeekRange(mealPrep.weekStart)} ·{" "}
-											{mealPrep.recipeCount} recipe
-											{mealPrep.recipeCount === 1 ? "" : "s"}
+											{mealPrep.plannedItemCount} planned item
+											{mealPrep.plannedItemCount === 1 ? "" : "s"}
 										</p>
 										{mealPrep.weekStart === thisWeek && (
 											<p className="pt-2 text-xs font-medium text-primary">

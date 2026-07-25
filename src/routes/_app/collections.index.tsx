@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -22,6 +22,7 @@ import { Label } from "../../components/ui/label.tsx";
 import {
 	createCollectionFn,
 	listCollectionsFn,
+	reorderCollectionsFn,
 } from "../../server/functions/collections.ts";
 
 export const Route = createFileRoute("/_app/collections/")({
@@ -30,18 +31,65 @@ export const Route = createFileRoute("/_app/collections/")({
 });
 
 function CollectionsPage() {
-	const collections = Route.useLoaderData();
+	const initial = Route.useLoaderData();
+	const qc = useQueryClient();
+	const { data: collections = initial } = useQuery({
+		queryKey: ["collections"],
+		queryFn: () => listCollectionsFn(),
+		initialData: initial,
+	});
+	const reorder = useMutation({
+		mutationFn: (ids: string[]) => reorderCollectionsFn({ data: { ids } }),
+		onMutate: async (ids) => {
+			await qc.cancelQueries({ queryKey: ["collections"] });
+			const previous = qc.getQueryData<typeof collections>(["collections"]);
+			const byId = new Map(collections.map((item) => [item.id, item]));
+			qc.setQueryData(
+				["collections"],
+				ids.flatMap((id, position) => {
+					const item = byId.get(id);
+					return item ? [{ ...item, position }] : [];
+				}),
+			);
+			return { previous };
+		},
+		onError: (_error, _ids, context) => {
+			if (context?.previous) qc.setQueryData(["collections"], context.previous);
+		},
+		onSettled: () => qc.invalidateQueries({ queryKey: ["collections"] }),
+	});
+
+	function move(index: number, direction: -1 | 1) {
+		const target = index + direction;
+		if (target < 0 || target >= collections.length || reorder.isPending) return;
+		const ids = collections.map((item) => item.id);
+		[ids[index], ids[target]] = [ids[target], ids[index]];
+		reorder.mutate(ids);
+	}
+
 	return (
-		<div className="mx-auto max-w-5xl space-y-6 p-6">
-			<header className="flex items-center justify-between">
+		<div className="mx-auto max-w-5xl space-y-6 px-4 py-5">
+			<header className="flex items-start justify-between gap-3">
 				<div>
 					<h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
-					<p className="text-muted-foreground">
+					<p className="text-sm text-muted-foreground">
 						{collections.length} cookbook{collections.length === 1 ? "" : "s"}
 					</p>
 				</div>
 				<NewCollectionButton />
 			</header>
+
+			{collections.length > 1 && (
+				<p className="flex items-center gap-2 text-sm text-muted-foreground">
+					<GripVertical className="size-4" /> Use the arrow buttons to set the
+					order shown throughout the app.
+				</p>
+			)}
+			{reorder.isError && (
+				<p role="alert" className="text-sm text-destructive">
+					Could not save the new order. Please try again.
+				</p>
+			)}
 
 			{collections.length === 0 ? (
 				<div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">
@@ -50,28 +98,57 @@ function CollectionsPage() {
 				</div>
 			) : (
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{collections.map((c) => (
+					{collections.map((c, index) => (
 						<li key={c.id}>
-							<Link
-								to="/collections/$id"
-								params={{ id: c.id }}
-								className="block focus-visible:outline-none"
-							>
-								<Card className="transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring">
-									<CardHeader>
-										<CardTitle className="flex items-center gap-2">
-											{c.icon && <span>{c.icon}</span>}
-											{c.name}
-										</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<p className="text-sm text-muted-foreground">
-											{c.recipeCount} recipe
-											{c.recipeCount === 1 ? "" : "s"}
-										</p>
-									</CardContent>
-								</Card>
-							</Link>
+							<Card className="h-full transition hover:shadow-md">
+								<CardHeader className="pb-2">
+									<div className="flex items-start gap-2">
+										<Link
+											to="/collections/$id"
+											params={{ id: c.id }}
+											className="min-w-0 flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<CardTitle className="flex items-center gap-2">
+												{c.icon && <span>{c.icon}</span>}
+												{c.name}
+											</CardTitle>
+										</Link>
+										<div className="flex shrink-0 gap-1">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-11 sm:size-9"
+												disabled={index === 0 || reorder.isPending}
+												onClick={() => move(index, -1)}
+												aria-label={`Move ${c.name} up`}
+											>
+												<ArrowUp className="size-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-11 sm:size-9"
+												disabled={
+													index === collections.length - 1 || reorder.isPending
+												}
+												onClick={() => move(index, 1)}
+												aria-label={`Move ${c.name} down`}
+											>
+												<ArrowDown className="size-4" />
+											</Button>
+										</div>
+									</div>
+								</CardHeader>
+								<CardContent>
+									<Link
+										to="/collections/$id"
+										params={{ id: c.id }}
+										className="text-sm text-muted-foreground hover:text-foreground"
+									>
+										{c.recipeCount} recipe{c.recipeCount === 1 ? "" : "s"}
+									</Link>
+								</CardContent>
+							</Card>
 						</li>
 					))}
 				</ul>

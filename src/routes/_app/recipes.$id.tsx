@@ -14,10 +14,10 @@ import {
 	Pencil,
 	Play,
 	Trash2,
-	Users,
 } from "lucide-react";
 import { useState } from "react";
 import { AddToMealPrepDialog } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
+import { ServingsControl } from "../../components/recipe/ServingsControl.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -38,6 +38,7 @@ import {
 	formatRecipeDuration,
 	totalRecipeMinutes,
 } from "../../lib/recipe-duration.ts";
+import { formatScaledQuantity, scaleQuantity } from "../../lib/servings.ts";
 import {
 	listCollectionsFn,
 	listCollectionsForRecipeFn,
@@ -58,6 +59,7 @@ function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
 	const router = useRouter();
 	const [mealPrepOpen, setMealPrepOpen] = useState(false);
+	const [servings, setServings] = useState(recipe.servings);
 
 	const del = useMutation({
 		mutationFn: () => deleteRecipeFn({ data: { id: recipe.id } }),
@@ -146,11 +148,12 @@ function RecipeDetailPage() {
 				/>
 			)}
 
-			<div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-				<span className="inline-flex items-center gap-1.5">
-					<Users className="size-4" />
-					{recipe.servings} servings
-				</span>
+			<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+				<ServingsControl
+					value={servings}
+					baseValue={recipe.servings}
+					onChange={setServings}
+				/>
 				{totalMinutes && (
 					<span className="inline-flex items-center gap-1.5">
 						<Clock className="size-4" />
@@ -179,8 +182,12 @@ function RecipeDetailPage() {
 
 			<div className="grid gap-6 md:grid-cols-[1fr_2fr]">
 				<Card>
-					<CardHeader>
+					<CardHeader className="space-y-3">
 						<CardTitle>Ingredients</CardTitle>
+						<p className="text-xs font-normal text-muted-foreground">
+							Amounts are scaled for {servings} serving
+							{servings === 1 ? "" : "s"}.
+						</p>
 					</CardHeader>
 					<CardContent>
 						{recipe.ingredients.length === 0 ? (
@@ -191,7 +198,13 @@ function RecipeDetailPage() {
 									<li key={ing.id} className="flex gap-2">
 										{ing.quantity != null && (
 											<span className="font-medium tabular-nums">
-												{ing.quantity}
+												{formatScaledQuantity(
+													scaleQuantity(
+														ing.quantity,
+														recipe.servings,
+														servings,
+													) ?? ing.quantity,
+												)}
 											</span>
 										)}
 										{ing.unit && (

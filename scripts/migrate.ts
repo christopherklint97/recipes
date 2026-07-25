@@ -7,6 +7,7 @@ const dbPath = process.env.DATABASE_URL ?? "dev.db";
 console.log(`[migrate] applying migrations to ${dbPath}`);
 
 const sqlite = new Database(dbPath, { create: true });
+sqlite.exec("PRAGMA foreign_keys = ON");
 sqlite.exec("PRAGMA journal_mode = WAL");
 
 const hasLegacyMealPlan = sqlite

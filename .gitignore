@@ -16,5 +16,5 @@ dev.db
 dev.db-journal
 dev.db-shm
 dev.db-wal
-drizzle/meta
+
 Screenshot*.png

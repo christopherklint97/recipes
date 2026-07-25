@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppImportRouteImport } from './routes/_app/import'
 import { Route as AppShoppingRouteImport } from './routes/_app/shopping'
+import { Route as AppWeekRouteImport } from './routes/_app/week'
 import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collections.index'
 import { Route as AppCollectionsIdRouteImport } from './routes/_app/collections.$id'
 import { Route as AppMealPrepIndexRouteImport } from './routes/_app/meal-prep.index'
@@ -50,6 +51,11 @@ const AppImportRoute = AppImportRouteImport.update({
 const AppShoppingRoute = AppShoppingRouteImport.update({
   id: '/shopping',
   path: '/shopping',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWeekRoute = AppWeekRouteImport.update({
+  id: '/week',
+  path: '/week',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCollectionsIndexRoute = AppCollectionsIndexRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
   '/shopping': typeof AppShoppingRoute
+  '/week': typeof AppWeekRoute
   '/collections/$id': typeof AppCollectionsIdRoute
   '/meal-prep/$id': typeof AppMealPrepIdRoute
   '/recipes/$id': typeof AppRecipesIdRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
   '/shopping': typeof AppShoppingRoute
+  '/week': typeof AppWeekRoute
   '/': typeof AppIndexRoute
   '/collections/$id': typeof AppCollectionsIdRoute
   '/meal-prep/$id': typeof AppMealPrepIdRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/import': typeof AppImportRoute
   '/_app/shopping': typeof AppShoppingRoute
+  '/_app/week': typeof AppWeekRoute
   '/_app/': typeof AppIndexRoute
   '/_app/collections/$id': typeof AppCollectionsIdRoute
   '/_app/meal-prep/$id': typeof AppMealPrepIdRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/import'
     | '/shopping'
+    | '/week'
     | '/collections/$id'
     | '/meal-prep/$id'
     | '/recipes/$id'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/import'
     | '/shopping'
+    | '/week'
     | '/'
     | '/collections/$id'
     | '/meal-prep/$id'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/import'
     | '/_app/shopping'
+    | '/_app/week'
     | '/_app/'
     | '/_app/collections/$id'
     | '/_app/meal-prep/$id'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/shopping'
       fullPath: '/shopping'
       preLoaderRoute: typeof AppShoppingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/week': {
+      id: '/_app/week'
+      path: '/week'
+      fullPath: '/week'
+      preLoaderRoute: typeof AppWeekRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/collections/': {
@@ -381,6 +400,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppImportRoute: typeof AppImportRoute
   AppShoppingRoute: typeof AppShoppingRoute
+  AppWeekRoute: typeof AppWeekRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCollectionsIdRoute: typeof AppCollectionsIdRoute
   AppMealPrepIdRoute: typeof AppMealPrepIdRoute
@@ -396,6 +416,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppImportRoute: AppImportRoute,
   AppShoppingRoute: AppShoppingRoute,
+  AppWeekRoute: AppWeekRoute,
   AppIndexRoute: AppIndexRoute,
   AppCollectionsIdRoute: AppCollectionsIdRoute,
   AppMealPrepIdRoute: AppMealPrepIdRoute,

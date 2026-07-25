@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { CalendarDays, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	formatWeek,
 	formatWeekRange,
@@ -54,6 +54,15 @@ export function AddToMealPrepDialog({
 		[recipes],
 	);
 
+	useEffect(() => {
+		if (!open || recipes.length === 0 || mealPreps.length === 0) return;
+		setMode("existing");
+		const currentWeek = mealPreps.find(
+			(mealPrep) => mealPrep.weekStart === weekStartFromOffset(),
+		);
+		setSelectedId((current) => current || currentWeek?.id || mealPreps[0].id);
+	}, [open, recipes.length, mealPreps]);
+
 	const create = useMutation({
 		mutationFn: () =>
 			createMealPrepFn({
@@ -61,6 +70,7 @@ export function AddToMealPrepDialog({
 			}),
 		onSuccess: async ({ id }) => {
 			await qc.invalidateQueries({ queryKey: ["meal-preps"] });
+			await qc.invalidateQueries({ queryKey: ["current-week"] });
 			onOpenChange(false);
 			setName("");
 			await router.navigate({ to: "/meal-prep/$id", params: { id } });
@@ -73,6 +83,7 @@ export function AddToMealPrepDialog({
 			}),
 		onSuccess: async ({ id }) => {
 			await qc.invalidateQueries({ queryKey: ["meal-preps"] });
+			await qc.invalidateQueries({ queryKey: ["current-week"] });
 			await qc.invalidateQueries({ queryKey: ["meal-prep", id] });
 			onOpenChange(false);
 			await router.navigate({ to: "/meal-prep/$id", params: { id } });

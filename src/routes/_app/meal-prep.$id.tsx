@@ -12,8 +12,10 @@ import {
 	Plus,
 	ShoppingCart,
 	Trash2,
+	Utensils,
 } from "lucide-react";
 import { useState } from "react";
+import { ManualMealItemDialog } from "../../components/meal-prep/ManualMealItemDialog.tsx";
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Button } from "../../components/ui/button.tsx";
@@ -35,6 +37,7 @@ import {
 import {
 	deleteMealPrepFn,
 	getMealPrepFn,
+	removeManualMealPrepItemFn,
 	removeRecipeFromMealPrepFn,
 	setMealPrepRecipeServingsFn,
 	updateMealPrepFn,
@@ -55,6 +58,7 @@ function MealPrepDetailPage() {
 	const router = useRouter();
 	const { openMealPrep } = useMealPrep();
 	const [editOpen, setEditOpen] = useState(false);
+	const [manualOpen, setManualOpen] = useState(false);
 	const { data } = useQuery({
 		queryKey: ["meal-prep", initial.id],
 		queryFn: () => getMealPrepFn({ data: { id: initial.id } }),
@@ -69,6 +73,15 @@ function MealPrepDetailPage() {
 			}),
 		onSuccess: () =>
 			qc.invalidateQueries({ queryKey: ["meal-prep", mealPrep.id] }),
+	});
+	const removeManual = useMutation({
+		mutationFn: (id: string) => removeManualMealPrepItemFn({ data: { id } }),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: ["meal-prep", mealPrep.id] }),
+				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
+				qc.invalidateQueries({ queryKey: ["current-week"] }),
+			]),
 	});
 	const servings = useMutation({
 		mutationFn: ({ recipeId, value }: { recipeId: string; value: number }) =>
@@ -93,9 +106,11 @@ function MealPrepDetailPage() {
 					<p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
 						<CalendarDays className="size-4" />
 						{formatWeek(mealPrep.weekStart)} ·{" "}
-						{formatWeekRange(mealPrep.weekStart)}· {mealPrep.recipes.length}{" "}
-						recipe
-						{mealPrep.recipes.length === 1 ? "" : "s"}
+						{formatWeekRange(mealPrep.weekStart)}·{" "}
+						{mealPrep.recipes.length + mealPrep.manualItems.length} planned item
+						{mealPrep.recipes.length + mealPrep.manualItems.length === 1
+							? ""
+							: "s"}
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
@@ -108,6 +123,9 @@ function MealPrepDetailPage() {
 						<Link to="/recipes">
 							<Plus className="size-4" /> Add recipes
 						</Link>
+					</Button>
+					<Button variant="outline" onClick={() => setManualOpen(true)}>
+						<Utensils className="size-4" /> Quick item
 					</Button>
 					<Button variant="outline" onClick={() => setEditOpen(true)}>
 						<Pencil className="size-4" /> Edit
@@ -124,11 +142,11 @@ function MealPrepDetailPage() {
 				</div>
 			</header>
 
-			{mealPrep.recipes.length === 0 ? (
+			{mealPrep.recipes.length === 0 && mealPrep.manualItems.length === 0 ? (
 				<div className="rounded-2xl border border-dashed p-12 text-center">
 					<p className="text-muted-foreground">
-						This meal prep is empty. Choose Meal prep on the Recipes page to add
-						recipes.
+						This meal prep is empty. Add a saved recipe or a quick one-off food
+						item.
 					</p>
 					<Button asChild className="mt-4">
 						<Link to="/recipes">Browse recipes</Link>
@@ -136,6 +154,46 @@ function MealPrepDetailPage() {
 				</div>
 			) : (
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{mealPrep.manualItems.map((item) => (
+						<li
+							key={item.id}
+							className="flex min-h-36 flex-col rounded-2xl border bg-card p-4 shadow-sm"
+						>
+							<div className="flex items-start gap-3">
+								<div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+									<Utensils className="size-5 text-primary" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<h2 className="font-semibold">{item.title}</h2>
+									{item.amount && (
+										<p className="text-sm text-muted-foreground">
+											{item.amount}
+										</p>
+									)}
+								</div>
+							</div>
+							{item.note && (
+								<p className="mt-3 text-sm text-muted-foreground">
+									{item.note}
+								</p>
+							)}
+							<div className="mt-auto flex items-center justify-between pt-3">
+								<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+									Quick item
+								</span>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-11 sm:size-9"
+									onClick={() => removeManual.mutate(item.id)}
+									disabled={removeManual.isPending}
+									aria-label={`Remove ${item.title}`}
+								>
+									<Trash2 className="size-4" />
+								</Button>
+							</div>
+						</li>
+					))}
 					{mealPrep.recipes.map((recipe) => (
 						<li
 							key={recipe.id}
@@ -164,7 +222,7 @@ function MealPrepDetailPage() {
 								<Button
 									variant="outline"
 									size="icon"
-									className="size-9"
+									className="size-11 sm:size-9"
 									onClick={() =>
 										servings.mutate({
 											recipeId: recipe.id,
@@ -190,7 +248,7 @@ function MealPrepDetailPage() {
 								<Button
 									variant="outline"
 									size="icon"
-									className="size-9"
+									className="size-11 sm:size-9"
 									onClick={() =>
 										servings.mutate({
 											recipeId: recipe.id,
@@ -217,6 +275,12 @@ function MealPrepDetailPage() {
 				</ul>
 			)}
 
+			<ManualMealItemDialog
+				mealPrepId={mealPrep.id}
+				mealPrepName={mealPrep.name}
+				open={manualOpen}
+				onOpenChange={setManualOpen}
+			/>
 			<EditMealPrepDialog
 				mealPrep={mealPrep}
 				open={editOpen}

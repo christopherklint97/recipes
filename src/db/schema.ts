@@ -84,6 +84,7 @@ export const collections = sqliteTable("collections", {
 	name: text().notNull(),
 	icon: text(),
 	coverImage: text("cover_image"),
+	position: integer().notNull().default(0),
 	...timestamps,
 });
 
@@ -123,6 +124,19 @@ export const mealPrepRecipes = sqliteTable(
 	(table) => [primaryKey({ columns: [table.mealPrepId, table.recipeId] })],
 );
 
+export const mealPrepItems = sqliteTable("meal_prep_items", {
+	id: id(),
+	mealPrepId: text("meal_prep_id")
+		.notNull()
+		.references(() => mealPreps.id, { onDelete: "cascade" }),
+	title: text().notNull(),
+	amount: text(),
+	note: text(),
+	addedAt: integer("added_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
 export const shoppingItems = sqliteTable("shopping_items", {
 	id: id(),
 	ingredientName: text("ingredient_name").notNull(),
@@ -154,5 +168,6 @@ export type Ingredient = typeof ingredients.$inferSelect;
 export type Instruction = typeof instructions.$inferSelect;
 export type Collection = typeof collections.$inferSelect;
 export type MealPrep = typeof mealPreps.$inferSelect;
+export type MealPrepItem = typeof mealPrepItems.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type ShoppingItem = typeof shoppingItems.$inferSelect;

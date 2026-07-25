@@ -9,6 +9,7 @@ import {
 	recipes,
 } from "../../db/schema.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
+import { reorderCollectionsInput } from "./validation.ts";
 
 export const listCollectionsFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
@@ -25,7 +26,7 @@ export const listCollectionsFn = createServerFn({ method: "GET" })
 		const rows = db
 			.select()
 			.from(collections)
-			.orderBy(asc(collections.name))
+			.orderBy(asc(collections.position), asc(collections.name))
 			.all();
 		return rows.map((c) => ({ ...c, recipeCount: countMap.get(c.id) ?? 0 }));
 	});
@@ -97,8 +98,19 @@ export const createCollectionFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		const id = crypto.randomUUID();
+		const last = db
+			.select({
+				value: sql<number>`coalesce(max(${collections.position}), -1)`,
+			})
+			.from(collections)
+			.get();
 		db.insert(collections)
-			.values({ id, name: data.name.trim(), icon: data.icon ?? null })
+			.values({
+				id,
+				name: data.name.trim(),
+				icon: data.icon ?? null,
+				position: Number(last?.value ?? -1) + 1,
+			})
 			.run();
 		return { id };
 	});
@@ -130,6 +142,30 @@ export const deleteCollectionFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		db.delete(collections).where(eq(collections.id, data.id)).run();
 		return { id: data.id };
+	});
+
+export const reorderCollectionsFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(reorderCollectionsInput)
+	.handler(async ({ data }) => {
+		const existing = db.select({ id: collections.id }).from(collections).all();
+		if (
+			existing.length !== data.ids.length ||
+			existing.some((row) => !data.ids.includes(row.id))
+		) {
+			throw new Error(
+				"Collection order is out of date. Refresh and try again.",
+			);
+		}
+		db.transaction((tx) => {
+			data.ids.forEach((id, position) => {
+				tx.update(collections)
+					.set({ position, updatedAt: new Date() })
+					.where(eq(collections.id, id))
+					.run();
+			});
+		});
+		return { ok: true };
 	});
 
 export const setRecipeInCollectionFn = createServerFn({ method: "POST" })

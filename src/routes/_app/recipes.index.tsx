@@ -66,14 +66,7 @@ function RecipesPage() {
 		placeholderData: (prev) => prev,
 	});
 
-	const searched =
-		tag || q === ""
-			? recipes
-			: recipes.filter((recipe) =>
-					`${recipe.title} ${recipe.description ?? ""}`
-						.toLowerCase()
-						.includes(q.toLowerCase()),
-				);
+	const searched = recipes;
 	const filtered = searched.filter((recipe) =>
 		matchesDurationFilter(recipe, durationFilter),
 	);
@@ -156,7 +149,8 @@ function RecipesPage() {
 						<Input
 							value={q}
 							onChange={(event) => setQ(event.target.value)}
-							placeholder="Search recipes…"
+							placeholder="Search recipes or ingredients…"
+							aria-label="Search recipe titles, descriptions, and ingredients"
 							className="pl-9"
 							disabled={!!tag}
 						/>

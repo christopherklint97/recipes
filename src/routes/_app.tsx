@@ -6,6 +6,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import {
+	CalendarCheck,
 	CalendarRange,
 	ChefHat,
 	Folder,
@@ -13,6 +14,7 @@ import {
 	ShoppingCart,
 } from "lucide-react";
 import { MealPrepProvider } from "../components/meal-prep/MealPrepProvider.tsx";
+import { ThemeToggle } from "../components/shell/ThemeToggle.tsx";
 import { UpdatePrompt } from "../components/shell/UpdatePrompt.tsx";
 import { getSessionFn } from "../server/auth/getSession.ts";
 
@@ -37,6 +39,9 @@ function AppLayout() {
 				<TopNav />
 				<Outlet />
 				<BottomNav />
+				<div className="fixed right-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-full border bg-background/90 shadow-md backdrop-blur md:hidden">
+					<ThemeToggle />
+				</div>
 				<UpdatePrompt />
 			</div>
 		</MealPrepProvider>
@@ -44,6 +49,7 @@ function AppLayout() {
 }
 
 const NAV_ITEMS = [
+	{ to: "/week", label: "This week", icon: CalendarCheck, exact: true },
 	{ to: "/recipes", label: "Recipes", icon: ChefHat, exact: true },
 	{ to: "/collections", label: "Collections", icon: Folder, exact: false },
 	{ to: "/meal-prep", label: "Meal prep", icon: CalendarRange, exact: false },
@@ -52,9 +58,12 @@ const NAV_ITEMS = [
 
 function TopNav() {
 	return (
-		<nav className="sticky top-0 z-30 hidden h-12 items-center gap-1 border-b bg-background/80 px-3 backdrop-blur md:flex">
+		<nav
+			className="sticky top-0 z-30 hidden h-12 items-center gap-1 border-b bg-background/80 px-3 backdrop-blur md:flex"
+			aria-label="Primary navigation"
+		>
 			<Link
-				to="/recipes"
+				to="/week"
 				className="mr-auto flex items-center gap-2 px-2 text-sm font-semibold tracking-tight"
 			>
 				<ChefHat className="size-4" />
@@ -71,6 +80,7 @@ function TopNav() {
 					{item.label}
 				</Link>
 			))}
+			<ThemeToggle />
 			<LogoutButton />
 		</nav>
 	);
@@ -101,8 +111,8 @@ function LogoutButton() {
 function BottomNav() {
 	return (
 		<nav
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
-			aria-label="Primary"
+			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+			aria-label="Primary navigation"
 		>
 			{NAV_ITEMS.map((item) => (
 				<Link

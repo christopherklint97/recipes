@@ -19,8 +19,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			{ charSet: "utf-8" },
 			{
 				name: "viewport",
-				content:
-					"width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
 			{ name: "theme-color", content: "#0a0a0a" },
 			{ name: "mobile-web-app-capable", content: "yes" },
@@ -42,6 +41,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<html lang="en">
 			<head>
 				<HeadContent />
+				<script suppressHydrationWarning>
+					{`(function(){try{var p=localStorage.getItem('recipes-theme')||'auto',h=new Date().getHours(),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=p==='dark'||(p==='auto'&&(h>=18||h<6||m)),t=document.querySelector('meta[name="theme-color"]');document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light';if(t)t.content=d?'#0a0a0a':'#ffffff'}catch(e){}})()`}
+				</script>
 				<link rel="manifest" href="/manifest.webmanifest" />
 				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 				<link rel="icon" type="image/x-icon" href="/favicon.ico" />

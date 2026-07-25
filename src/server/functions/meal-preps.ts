@@ -4,11 +4,13 @@ import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
 	ingredients,
+	mealPrepItems,
 	mealPrepRecipes,
 	mealPreps,
 	recipes,
 } from "../../db/schema.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
+import { manualMealPrepItemInput } from "./validation.ts";
 
 const weekStartSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const recipeIdsSchema = z.array(z.string().min(1)).max(100);
@@ -27,6 +29,17 @@ export const listMealPrepsFn = createServerFn({ method: "GET" })
 		const countById = new Map(
 			counts.map((row) => [row.mealPrepId, Number(row.count)]),
 		);
+		const manualCounts = db
+			.select({
+				mealPrepId: mealPrepItems.mealPrepId,
+				count: sql<number>`count(*)`.as("count"),
+			})
+			.from(mealPrepItems)
+			.groupBy(mealPrepItems.mealPrepId)
+			.all();
+		const manualCountById = new Map(
+			manualCounts.map((row) => [row.mealPrepId, Number(row.count)]),
+		);
 		return db
 			.select()
 			.from(mealPreps)
@@ -35,6 +48,10 @@ export const listMealPrepsFn = createServerFn({ method: "GET" })
 			.map((mealPrep) => ({
 				...mealPrep,
 				recipeCount: countById.get(mealPrep.id) ?? 0,
+				manualItemCount: manualCountById.get(mealPrep.id) ?? 0,
+				plannedItemCount:
+					(countById.get(mealPrep.id) ?? 0) +
+					(manualCountById.get(mealPrep.id) ?? 0),
 			}));
 	});
 
@@ -58,8 +75,15 @@ export const getMealPrepFn = createServerFn({ method: "GET" })
 			.where(eq(mealPrepRecipes.mealPrepId, data.id))
 			.orderBy(desc(mealPrepRecipes.addedAt))
 			.all();
+		const manualItems = db
+			.select()
+			.from(mealPrepItems)
+			.where(eq(mealPrepItems.mealPrepId, data.id))
+			.orderBy(desc(mealPrepItems.addedAt))
+			.all();
 		const recipeIds = selections.map((row) => row.recipeId);
-		if (recipeIds.length === 0) return { ...mealPrep, recipes: [] };
+		if (recipeIds.length === 0)
+			return { ...mealPrep, recipes: [], manualItems };
 		const recipeRows = db
 			.select({
 				id: recipes.id,
@@ -87,6 +111,7 @@ export const getMealPrepFn = createServerFn({ method: "GET" })
 		);
 		return {
 			...mealPrep,
+			manualItems,
 			recipes: selections.flatMap((selection) => {
 				const recipe = recipeById.get(selection.recipeId);
 				return recipe
@@ -223,6 +248,46 @@ export const removeRecipeFromMealPrepFn = createServerFn({ method: "POST" })
 				sql`${mealPrepRecipes.mealPrepId} = ${data.mealPrepId} and ${mealPrepRecipes.recipeId} = ${data.recipeId}`,
 			)
 			.run();
+		return { ok: true };
+	});
+
+export const addManualMealPrepItemFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(manualMealPrepItemInput)
+	.handler(async ({ data }) => {
+		const id = crypto.randomUUID();
+		db.insert(mealPrepItems)
+			.values({
+				id,
+				mealPrepId: data.mealPrepId,
+				title: data.title.trim(),
+				amount: data.amount?.trim() || null,
+				note: data.note?.trim() || null,
+			})
+			.run();
+		return { id };
+	});
+
+export const updateManualMealPrepItemFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(manualMealPrepItemInput.extend({ id: z.string().min(1) }))
+	.handler(async ({ data }) => {
+		db.update(mealPrepItems)
+			.set({
+				title: data.title.trim(),
+				amount: data.amount?.trim() || null,
+				note: data.note?.trim() || null,
+			})
+			.where(eq(mealPrepItems.id, data.id))
+			.run();
+		return { id: data.id };
+	});
+
+export const removeManualMealPrepItemFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(z.object({ id: z.string().min(1) }))
+	.handler(async ({ data }) => {
+		db.delete(mealPrepItems).where(eq(mealPrepItems.id, data.id)).run();
 		return { ok: true };
 	});
 

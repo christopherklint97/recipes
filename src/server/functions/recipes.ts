@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { desc, eq, exists, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
@@ -97,7 +97,18 @@ export const listRecipesFn = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const q = data?.q?.trim();
 		const where = q
-			? or(like(recipes.title, `%${q}%`), like(recipes.description, `%${q}%`))
+			? or(
+					like(recipes.title, `%${q}%`),
+					like(recipes.description, `%${q}%`),
+					exists(
+						db
+							.select({ id: ingredientsTable.id })
+							.from(ingredientsTable)
+							.where(
+								sql`${ingredientsTable.recipeId} = ${recipes.id} and ${ingredientsTable.name} like ${`%${q}%`}`,
+							),
+					),
+				)
 			: undefined;
 		const rows = db
 			.select({
