@@ -175,6 +175,9 @@ function MealPrepDetailPage() {
 								</div>
 								<div className="min-w-0 flex-1">
 									<h2 className="font-semibold">{item.title}</h2>
+									<p className="text-sm text-muted-foreground">
+										{item.servings} serving{item.servings === 1 ? "" : "s"}
+									</p>
 									{item.amount && (
 										<p className="text-sm text-muted-foreground">
 											{item.amount}

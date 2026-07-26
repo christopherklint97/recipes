@@ -10,6 +10,7 @@ describe("planning validation", () => {
 			manualMealPrepItemInput.safeParse({
 				mealPrepId: "prep-1",
 				title: "Greek yoghurt",
+				servings: 2,
 				amount: "500 g",
 				note: "Breakfast",
 			}).success,
@@ -20,6 +21,13 @@ describe("planning validation", () => {
 		expect(
 			manualMealPrepItemInput.safeParse({ mealPrepId: "prep-1", title: "  " })
 				.success,
+		).toBe(false);
+		expect(
+			manualMealPrepItemInput.safeParse({
+				mealPrepId: "prep-1",
+				title: "Soup",
+				servings: 0,
+			}).success,
 		).toBe(false);
 		expect(
 			reorderCollectionsInput.safeParse({ ids: ["one", "one"] }).success,

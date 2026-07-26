@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CalendarDays,
 	ChefHat,
+	ChevronLeft,
+	ChevronRight,
 	Pencil,
 	Plus,
 	ShoppingCart,
@@ -28,8 +30,8 @@ import {
 	removeManualMealPrepItemFn,
 } from "../../server/functions/meal-preps.ts";
 
-async function loadCurrentWeek() {
-	const weekStart = weekStartFromOffset();
+async function loadWeek(offset = 0) {
+	const weekStart = weekStartFromOffset(offset);
 	const plans = (await listMealPrepsFn()).filter(
 		(plan) => plan.weekStart === weekStart,
 	);
@@ -40,7 +42,7 @@ async function loadCurrentWeek() {
 }
 
 export const Route = createFileRoute("/_app/week")({
-	loader: loadCurrentWeek,
+	loader: () => loadWeek(),
 	component: CurrentWeekPage,
 });
 
@@ -48,19 +50,34 @@ function CurrentWeekPage() {
 	const initial = Route.useLoaderData();
 	const qc = useQueryClient();
 	const { openMealPrep } = useMealPrep();
+	const [weekOffset, setWeekOffset] = useState(0);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [manualPlan, setManualPlan] = useState<{
 		id: string;
 		name: string;
 		item?: ManualMealItemValue;
 	} | null>(null);
-	const { data = initial } = useQuery({
-		queryKey: ["current-week", initial.weekStart],
-		queryFn: loadCurrentWeek,
-		initialData: initial,
-	});
+	const selectedWeekStart = weekStartFromOffset(weekOffset);
+	const { data = { weekStart: selectedWeekStart, plans: [] }, isPending } =
+		useQuery({
+			queryKey: ["current-week", selectedWeekStart],
+			queryFn: () => loadWeek(weekOffset),
+			initialData: weekOffset === 0 ? initial : undefined,
+		});
 	const recipes = data.plans.flatMap((plan) => plan.recipes);
 	const manualItems = data.plans.flatMap((plan) => plan.manualItems);
+	const quickServings = manualItems.reduce(
+		(total, item) => total + item.servings,
+		0,
+	);
+	const weekTitle =
+		weekOffset === 0
+			? "This week"
+			: weekOffset === 1
+				? "Next week"
+				: weekOffset === -1
+					? "Last week"
+					: formatWeek(data.weekStart);
 	const removeManual = useMutation({
 		mutationFn: (id: string) => removeManualMealPrepItemFn({ data: { id } }),
 		onSuccess: () =>
@@ -77,11 +94,40 @@ function CurrentWeekPage() {
 					<p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
 						Your plan
 					</p>
-					<h1 className="text-3xl font-semibold tracking-tight">This week</h1>
-					<p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-						<CalendarDays className="size-4" /> {formatWeek(data.weekStart)} ·{" "}
-						{formatWeekRange(data.weekStart)}
-					</p>
+					<h1 className="text-3xl font-semibold tracking-tight">{weekTitle}</h1>
+					<div className="mt-1 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-9"
+							onClick={() => setWeekOffset((offset) => offset - 1)}
+							aria-label="Show previous week"
+						>
+							<ChevronLeft className="size-4" />
+						</Button>
+						<p className="flex items-center gap-1.5">
+							<CalendarDays className="size-4" /> {formatWeek(data.weekStart)} ·{" "}
+							{formatWeekRange(data.weekStart)}
+						</p>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-9"
+							onClick={() => setWeekOffset((offset) => offset + 1)}
+							aria-label="Show next week"
+						>
+							<ChevronRight className="size-4" />
+						</Button>
+						{weekOffset !== 0 && (
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setWeekOffset(0)}
+							>
+								Today
+							</Button>
+						)}
+					</div>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{recipes.length > 0 && (
@@ -95,18 +141,22 @@ function CurrentWeekPage() {
 				</div>
 			</header>
 
-			{data.plans.length === 0 ? (
+			{isPending ? (
+				<div className="rounded-2xl border bg-card/50 px-6 py-14 text-center text-sm text-muted-foreground">
+					Loading week…
+				</div>
+			) : data.plans.length === 0 ? (
 				<div className="rounded-2xl border border-dashed bg-card/50 px-6 py-14 text-center">
 					<div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
 						<Utensils className="size-6 text-muted-foreground" />
 					</div>
 					<h2 className="text-lg font-semibold">Nothing planned yet</h2>
 					<p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-						Create this week’s plan, then add saved recipes or quick one-off
-						food entries.
+						Create a plan for {weekTitle.toLowerCase()}, then add saved recipes
+						or quick one-off food entries.
 					</p>
 					<Button className="mt-5" onClick={() => setCreateOpen(true)}>
-						<Plus className="size-4" /> Plan this week
+						<Plus className="size-4" /> Plan {weekTitle.toLowerCase()}
 					</Button>
 				</div>
 			) : (
@@ -114,7 +164,7 @@ function CurrentWeekPage() {
 					<div className="grid grid-cols-3 gap-2 rounded-2xl border bg-card p-3 text-center shadow-sm">
 						<Summary value={data.plans.length} label="plans" />
 						<Summary value={recipes.length} label="recipes" />
-						<Summary value={manualItems.length} label="quick items" />
+						<Summary value={quickServings} label="quick servings" />
 					</div>
 					{data.plans.map((plan) => (
 						<section
@@ -200,13 +250,18 @@ function CurrentWeekPage() {
 											</div>
 											<div className="min-w-0 flex-1">
 												<h3 className="font-semibold">{item.title}</h3>
-												{(item.amount || item.note) && (
-													<p className="text-xs text-muted-foreground">
-														{[item.amount, item.note]
-															.filter(Boolean)
-															.join(" · ")}
-													</p>
-												)}
+												<p className="text-xs text-muted-foreground">
+													{item.servings} serving
+													{item.servings === 1 ? "" : "s"}
+													{(item.amount || item.note) && (
+														<>
+															{" · "}
+															{[item.amount, item.note]
+																.filter(Boolean)
+																.join(" · ")}
+														</>
+													)}
+												</p>
 												<p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
 													Quick item
 												</p>
@@ -246,7 +301,11 @@ function CurrentWeekPage() {
 					))}
 				</div>
 			)}
-			<AddToMealPrepDialog open={createOpen} onOpenChange={setCreateOpen} />
+			<AddToMealPrepDialog
+				open={createOpen}
+				onOpenChange={setCreateOpen}
+				defaultWeekStart={data.weekStart}
+			/>
 			{manualPlan && (
 				<ManualMealItemDialog
 					mealPrepId={manualPlan.id}

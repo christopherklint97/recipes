@@ -261,6 +261,7 @@ export const addManualMealPrepItemFn = createServerFn({ method: "POST" })
 				id,
 				mealPrepId: data.mealPrepId,
 				title: data.title.trim(),
+				servings: data.servings,
 				amount: data.amount?.trim() || null,
 				note: data.note?.trim() || null,
 			})
@@ -275,6 +276,7 @@ export const updateManualMealPrepItemFn = createServerFn({ method: "POST" })
 		db.update(mealPrepItems)
 			.set({
 				title: data.title.trim(),
+				servings: data.servings,
 				amount: data.amount?.trim() || null,
 				note: data.note?.trim() || null,
 			})

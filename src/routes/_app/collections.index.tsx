@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
+import {
+	ArrowDown,
+	ArrowUp,
+	Check,
+	GripVertical,
+	Pencil,
+	Plus,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button.tsx";
 import {
@@ -33,6 +40,7 @@ export const Route = createFileRoute("/_app/collections/")({
 function CollectionsPage() {
 	const initial = Route.useLoaderData();
 	const qc = useQueryClient();
+	const [editingOrder, setEditingOrder] = useState(false);
 	const { data: collections = initial } = useQuery({
 		queryKey: ["collections"],
 		queryFn: () => listCollectionsFn(),
@@ -80,10 +88,30 @@ function CollectionsPage() {
 			</header>
 
 			{collections.length > 1 && (
-				<p className="flex items-center gap-2 text-sm text-muted-foreground">
-					<GripVertical className="size-4" /> Use the arrow buttons to set the
-					order shown throughout the app.
-				</p>
+				<div className="flex items-center justify-between gap-3">
+					{editingOrder ? (
+						<p className="flex items-center gap-2 text-sm text-muted-foreground">
+							<GripVertical className="size-4 shrink-0" /> Use the arrows to set
+							the order shown throughout the app.
+						</p>
+					) : (
+						<span />
+					)}
+					<Button
+						variant="outline"
+						size="sm"
+						className="shrink-0"
+						onClick={() => setEditingOrder((editing) => !editing)}
+						aria-pressed={editingOrder}
+					>
+						{editingOrder ? (
+							<Check className="size-4" />
+						) : (
+							<Pencil className="size-4" />
+						)}
+						{editingOrder ? "Done" : "Edit order"}
+					</Button>
+				</div>
 			)}
 			{reorder.isError && (
 				<p role="alert" className="text-sm text-destructive">
@@ -113,30 +141,33 @@ function CollectionsPage() {
 												{c.name}
 											</CardTitle>
 										</Link>
-										<div className="flex shrink-0 gap-1">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="size-11 sm:size-9"
-												disabled={index === 0 || reorder.isPending}
-												onClick={() => move(index, -1)}
-												aria-label={`Move ${c.name} up`}
-											>
-												<ArrowUp className="size-4" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="size-11 sm:size-9"
-												disabled={
-													index === collections.length - 1 || reorder.isPending
-												}
-												onClick={() => move(index, 1)}
-												aria-label={`Move ${c.name} down`}
-											>
-												<ArrowDown className="size-4" />
-											</Button>
-										</div>
+										{editingOrder && (
+											<div className="flex shrink-0 gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+													disabled={index === 0 || reorder.isPending}
+													onClick={() => move(index, -1)}
+													aria-label={`Move ${c.name} up`}
+												>
+													<ArrowUp className="size-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+													disabled={
+														index === collections.length - 1 ||
+														reorder.isPending
+													}
+													onClick={() => move(index, 1)}
+													aria-label={`Move ${c.name} down`}
+												>
+													<ArrowDown className="size-4" />
+												</Button>
+											</div>
+										)}
 									</div>
 								</CardHeader>
 								<CardContent>

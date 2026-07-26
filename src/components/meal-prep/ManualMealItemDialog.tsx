@@ -19,6 +19,7 @@ import { Label } from "../ui/label.tsx";
 export type ManualMealItemValue = {
 	id: string;
 	title: string;
+	servings: number;
 	amount: string | null;
 	note: string | null;
 };
@@ -38,6 +39,7 @@ export function ManualMealItemDialog({
 }) {
 	const qc = useQueryClient();
 	const [title, setTitle] = useState("");
+	const [servings, setServings] = useState(2);
 	const [amount, setAmount] = useState("");
 	const [note, setNote] = useState("");
 	const editing = Boolean(item);
@@ -45,6 +47,7 @@ export function ManualMealItemDialog({
 	useEffect(() => {
 		if (!open) return;
 		setTitle(item?.title ?? "");
+		setServings(item?.servings ?? 2);
 		setAmount(item?.amount ?? "");
 		setNote(item?.note ?? "");
 	}, [open, item]);
@@ -54,6 +57,7 @@ export function ManualMealItemDialog({
 			const data = {
 				mealPrepId,
 				title,
+				servings,
 				amount: amount || null,
 				note: note || null,
 			};
@@ -97,8 +101,20 @@ export function ManualMealItemDialog({
 						/>
 					</div>
 					<div className="space-y-2">
+						<Label htmlFor="manual-item-servings">Servings</Label>
+						<Input
+							id="manual-item-servings"
+							type="number"
+							inputMode="numeric"
+							min={1}
+							max={100}
+							value={servings}
+							onChange={(event) => setServings(Number(event.target.value))}
+						/>
+					</div>
+					<div className="space-y-2">
 						<Label htmlFor="manual-item-amount">
-							Amount{" "}
+							Additional amount{" "}
 							<span className="font-normal text-muted-foreground">
 								(optional)
 							</span>
@@ -107,7 +123,7 @@ export function ManualMealItemDialog({
 							id="manual-item-amount"
 							value={amount}
 							onChange={(event) => setAmount(event.target.value)}
-							placeholder="2 portions, 500 g…"
+							placeholder="500 g, 1 package…"
 							maxLength={80}
 						/>
 					</div>
@@ -136,7 +152,13 @@ export function ManualMealItemDialog({
 				<DialogFooter>
 					<Button
 						onClick={() => save.mutate()}
-						disabled={!title.trim() || save.isPending}
+						disabled={
+							!title.trim() ||
+							!Number.isInteger(servings) ||
+							servings < 1 ||
+							servings > 100 ||
+							save.isPending
+						}
 					>
 						{editing ? (
 							<Pencil className="size-4" />

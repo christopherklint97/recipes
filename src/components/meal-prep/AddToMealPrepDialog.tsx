@@ -33,10 +33,12 @@ export function AddToMealPrepDialog({
 	open,
 	onOpenChange,
 	recipes = [],
+	defaultWeekStart,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	recipes?: MealPrepCandidate[];
+	defaultWeekStart?: string;
 }) {
 	const qc = useQueryClient();
 	const router = useRouter();
@@ -53,6 +55,10 @@ export function AddToMealPrepDialog({
 		() => recipes.map((recipe) => recipe.id),
 		[recipes],
 	);
+
+	useEffect(() => {
+		if (open && defaultWeekStart) setWeekStart(defaultWeekStart);
+	}, [open, defaultWeekStart]);
 
 	useEffect(() => {
 		if (!open || recipes.length === 0 || mealPreps.length === 0) return;

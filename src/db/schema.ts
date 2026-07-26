@@ -130,6 +130,7 @@ export const mealPrepItems = sqliteTable("meal_prep_items", {
 		.notNull()
 		.references(() => mealPreps.id, { onDelete: "cascade" }),
 	title: text().notNull(),
+	servings: integer().notNull().default(2),
 	amount: text(),
 	note: text(),
 	addedAt: integer("added_at", { mode: "timestamp" })
