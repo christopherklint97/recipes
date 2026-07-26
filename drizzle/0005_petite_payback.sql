@@ -1,0 +1,1 @@
+ALTER TABLE `meal_prep_items` ADD `image` text;

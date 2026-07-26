@@ -11,6 +11,7 @@ describe("planning validation", () => {
 				mealPrepId: "prep-1",
 				title: "Greek yoghurt",
 				servings: 2,
+				image: "/uploads/yoghurt.webp",
 				amount: "500 g",
 				note: "Breakfast",
 			}).success,

@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { aggregateRecipeServings, literalLikeSubstring } from "./planning.ts";
+import {
+	aggregateRecipeServings,
+	literalLikeSubstring,
+	summarizeDishes,
+} from "./planning.ts";
+
+describe("summarizeDishes", () => {
+	it("combines recipes and quick items in both totals", () => {
+		expect(
+			summarizeDishes([{ servings: 4 }], [{ servings: 2 }, { servings: 6 }]),
+		).toEqual({ dishes: 3, servings: 12 });
+	});
+});
 
 describe("aggregateRecipeServings", () => {
 	it("adds servings for a recipe present in several plans", () => {

@@ -15,12 +15,16 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { Button } from "../../components/ui/button.tsx";
 import { formatQuantity, formatSeconds } from "../../lib/format.ts";
 import { useWakeLock } from "../../lib/wakelock.ts";
 import { getRecipeFn } from "../../server/functions/recipes.ts";
 
 export const Route = createFileRoute("/_app/recipes/$id_/cook")({
+	validateSearch: z.object({
+		servings: z.coerce.number().int().min(1).max(100).optional(),
+	}),
 	loader: async ({ params }) => {
 		const r = await getRecipeFn({ data: { id: params.id } });
 		if (!r) throw notFound();
@@ -31,9 +35,10 @@ export const Route = createFileRoute("/_app/recipes/$id_/cook")({
 
 function CookPage() {
 	const recipe = Route.useLoaderData();
+	const { servings: initialServings } = Route.useSearch();
 	const navigate = useNavigate();
 	const [stepIndex, setStepIndex] = useState(0);
-	const [servings, setServings] = useState(recipe.servings);
+	const [servings, setServings] = useState(initialServings ?? recipe.servings);
 	useWakeLock(true);
 
 	const baseServings = Math.max(1, recipe.servings);
@@ -65,6 +70,7 @@ function CookPage() {
 		void navigate({
 			to: "/recipes/$id",
 			params: { id: recipe.id },
+			search: { servings },
 		});
 	}
 

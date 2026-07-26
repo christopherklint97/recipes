@@ -15,7 +15,8 @@ import {
 	Play,
 	Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 import { AddToMealPrepDialog } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
 import { ServingsControl } from "../../components/recipe/ServingsControl.tsx";
 import { Badge } from "../../components/ui/badge.tsx";
@@ -47,6 +48,9 @@ import {
 import { deleteRecipeFn, getRecipeFn } from "../../server/functions/recipes.ts";
 
 export const Route = createFileRoute("/_app/recipes/$id")({
+	validateSearch: z.object({
+		servings: z.coerce.number().int().min(1).max(100).optional(),
+	}),
 	loader: async ({ params }) => {
 		const recipe = await getRecipeFn({ data: { id: params.id } });
 		if (!recipe) throw notFound();
@@ -57,9 +61,15 @@ export const Route = createFileRoute("/_app/recipes/$id")({
 
 function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
+	const { servings: mealPrepServings } = Route.useSearch();
 	const router = useRouter();
 	const [mealPrepOpen, setMealPrepOpen] = useState(false);
-	const [servings, setServings] = useState(recipe.servings);
+	const [servings, setServings] = useState(mealPrepServings ?? recipe.servings);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: changing recipe ids must reset local adjustments even when both recipes have the same base servings
+	useEffect(() => {
+		setServings(mealPrepServings ?? recipe.servings);
+	}, [mealPrepServings, recipe.id, recipe.servings]);
 
 	const del = useMutation({
 		mutationFn: () => deleteRecipeFn({ data: { id: recipe.id } }),
@@ -92,7 +102,11 @@ function RecipeDetailPage() {
 				)}
 				<div className="flex flex-wrap gap-2">
 					<Button asChild size="sm">
-						<Link to="/recipes/$id/cook" params={{ id: recipe.id }}>
+						<Link
+							to="/recipes/$id/cook"
+							params={{ id: recipe.id }}
+							search={{ servings }}
+						>
 							<Play className="size-4" />
 							Cook
 						</Link>

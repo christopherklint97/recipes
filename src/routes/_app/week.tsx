@@ -19,6 +19,7 @@ import {
 } from "../../components/meal-prep/ManualMealItemDialog.tsx";
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { Button } from "../../components/ui/button.tsx";
+import { summarizeDishes } from "../../lib/planning.ts";
 import {
 	formatWeek,
 	formatWeekRange,
@@ -66,10 +67,7 @@ function CurrentWeekPage() {
 		});
 	const recipes = data.plans.flatMap((plan) => plan.recipes);
 	const manualItems = data.plans.flatMap((plan) => plan.manualItems);
-	const quickServings = manualItems.reduce(
-		(total, item) => total + item.servings,
-		0,
-	);
+	const summary = summarizeDishes(recipes, manualItems);
 	const weekTitle =
 		weekOffset === 0
 			? "This week"
@@ -153,7 +151,7 @@ function CurrentWeekPage() {
 					<h2 className="text-lg font-semibold">Nothing planned yet</h2>
 					<p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
 						Create a plan for {weekTitle.toLowerCase()}, then add saved recipes
-						or quick one-off food entries.
+						or quick meals.
 					</p>
 					<Button className="mt-5" onClick={() => setCreateOpen(true)}>
 						<Plus className="size-4" /> Plan {weekTitle.toLowerCase()}
@@ -161,10 +159,9 @@ function CurrentWeekPage() {
 				</div>
 			) : (
 				<div className="space-y-8">
-					<div className="grid grid-cols-3 gap-2 rounded-2xl border bg-card p-3 text-center shadow-sm">
-						<Summary value={data.plans.length} label="plans" />
-						<Summary value={recipes.length} label="recipes" />
-						<Summary value={quickServings} label="quick servings" />
+					<div className="grid grid-cols-2 gap-2 rounded-2xl border bg-card p-3 text-center shadow-sm">
+						<Summary value={summary.dishes} label="dishes" />
+						<Summary value={summary.servings} label="servings" />
 					</div>
 					{data.plans.map((plan) => (
 						<section
@@ -197,13 +194,13 @@ function CurrentWeekPage() {
 											setManualPlan({ id: plan.id, name: plan.name })
 										}
 									>
-										<Plus className="size-4" /> Quick item
+										<Plus className="size-4" /> Quick meal
 									</Button>
 								</div>
 							</div>
 							{plan.recipes.length === 0 && plan.manualItems.length === 0 ? (
 								<p className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-									This plan is empty. Add a recipe or a quick item.
+									This plan is empty. Add a recipe or a quick meal.
 								</p>
 							) : (
 								<ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -215,6 +212,7 @@ function CurrentWeekPage() {
 											<Link
 												to="/recipes/$id"
 												params={{ id: recipe.id }}
+												search={{ servings: recipe.servings }}
 												className="flex h-full items-center gap-3 p-3"
 											>
 												{recipe.heroImage ? (
@@ -245,9 +243,17 @@ function CurrentWeekPage() {
 											key={`manual-${item.id}`}
 											className="flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-sm"
 										>
-											<div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-												<Utensils className="size-5 text-primary" />
-											</div>
+											{item.image ? (
+												<img
+													src={item.image}
+													alt=""
+													className="size-12 shrink-0 rounded-xl object-cover"
+												/>
+											) : (
+												<div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+													<Utensils className="size-5 text-primary" />
+												</div>
+											)}
 											<div className="min-w-0 flex-1">
 												<h3 className="font-semibold">{item.title}</h3>
 												<p className="text-xs text-muted-foreground">
@@ -263,7 +269,7 @@ function CurrentWeekPage() {
 													)}
 												</p>
 												<p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-													Quick item
+													Quick meal
 												</p>
 											</div>
 											<div className="flex gap-1">

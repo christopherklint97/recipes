@@ -135,7 +135,7 @@ function MealPrepDetailPage() {
 							setManualOpen(true);
 						}}
 					>
-						<Utensils className="size-4" /> Quick item
+						<Utensils className="size-4" /> Quick meal
 					</Button>
 					<Button variant="outline" onClick={() => setEditOpen(true)}>
 						<Pencil className="size-4" /> Edit
@@ -155,8 +155,7 @@ function MealPrepDetailPage() {
 			{mealPrep.recipes.length === 0 && mealPrep.manualItems.length === 0 ? (
 				<div className="rounded-2xl border border-dashed p-12 text-center">
 					<p className="text-muted-foreground">
-						This meal prep is empty. Add a saved recipe or a quick one-off food
-						item.
+						This meal prep is empty. Add a saved recipe or a quick meal.
 					</p>
 					<Button asChild className="mt-4">
 						<Link to="/recipes">Browse recipes</Link>
@@ -170,9 +169,17 @@ function MealPrepDetailPage() {
 							className="flex min-h-36 flex-col rounded-2xl border bg-card p-4 shadow-sm"
 						>
 							<div className="flex items-start gap-3">
-								<div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-									<Utensils className="size-5 text-primary" />
-								</div>
+								{item.image ? (
+									<img
+										src={item.image}
+										alt=""
+										className="size-11 shrink-0 rounded-xl object-cover"
+									/>
+								) : (
+									<div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+										<Utensils className="size-5 text-primary" />
+									</div>
+								)}
 								<div className="min-w-0 flex-1">
 									<h2 className="font-semibold">{item.title}</h2>
 									<p className="text-sm text-muted-foreground">
@@ -192,7 +199,7 @@ function MealPrepDetailPage() {
 							)}
 							<div className="mt-auto flex items-center justify-between pt-3">
 								<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-									Quick item
+									Quick meal
 								</span>
 								<div className="flex gap-1">
 									<Button
@@ -226,7 +233,11 @@ function MealPrepDetailPage() {
 							key={recipe.id}
 							className="overflow-hidden rounded-2xl border bg-card shadow-sm"
 						>
-							<Link to="/recipes/$id" params={{ id: recipe.id }}>
+							<Link
+								to="/recipes/$id"
+								params={{ id: recipe.id }}
+								search={{ servings: recipe.servings }}
+							>
 								{recipe.heroImage ? (
 									<img
 										src={recipe.heroImage}
