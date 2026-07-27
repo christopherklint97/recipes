@@ -9,11 +9,42 @@ import {
 	mealPreps,
 	recipes,
 } from "../../db/schema.ts";
+import { isIsoWeekStart } from "../../lib/week.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
 import { manualMealPrepItemInput } from "./validation.ts";
 
-const weekStartSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const weekStartSchema = z
+	.string()
+	.regex(/^\d{4}-\d{2}-\d{2}$/)
+	.refine(isIsoWeekStart, "Week start must be a valid ISO-week Monday");
 const recipeIdsSchema = z.array(z.string().min(1)).max(100);
+
+function ensureMealPrepForWeek(weekStart: string): string {
+	const existing = db
+		.select({ id: mealPreps.id })
+		.from(mealPreps)
+		.where(eq(mealPreps.weekStart, weekStart))
+		.get();
+	if (existing) return existing.id;
+
+	const id = crypto.randomUUID();
+	db.insert(mealPreps)
+		.values({ id, name: `Plan for ${weekStart}`, weekStart })
+		.onConflictDoNothing({ target: mealPreps.weekStart })
+		.run();
+	return (
+		db
+			.select({ id: mealPreps.id })
+			.from(mealPreps)
+			.where(eq(mealPreps.weekStart, weekStart))
+			.get()?.id ?? id
+	);
+}
+
+export const ensureMealPrepForWeekFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(z.object({ weekStart: weekStartSchema }))
+	.handler(async ({ data }) => ({ id: ensureMealPrepForWeek(data.weekStart) }));
 
 export const listMealPrepsFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
@@ -194,6 +225,37 @@ export const addRecipesToMealPrepFn = createServerFn({ method: "POST" })
 		return { id: data.mealPrepId, count: recipeRows.length };
 	});
 
+export const addRecipesToWeekFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		z.object({
+			weekStart: weekStartSchema,
+			recipeIds: recipeIdsSchema.min(1),
+		}),
+	)
+	.handler(async ({ data }) => {
+		const mealPrepId = ensureMealPrepForWeek(data.weekStart);
+		const recipeIds = [...new Set(data.recipeIds)];
+		const recipeRows = db
+			.select({ id: recipes.id, servings: recipes.servings })
+			.from(recipes)
+			.where(inArray(recipes.id, recipeIds))
+			.all();
+		db.transaction((tx) => {
+			for (const recipe of recipeRows) {
+				tx.insert(mealPrepRecipes)
+					.values({
+						mealPrepId,
+						recipeId: recipe.id,
+						servings: recipe.servings,
+					})
+					.onConflictDoNothing()
+					.run();
+			}
+		});
+		return { id: mealPrepId, count: recipeRows.length };
+	});
+
 export const updateMealPrepFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
 	.validator(
@@ -249,6 +311,30 @@ export const removeRecipeFromMealPrepFn = createServerFn({ method: "POST" })
 			)
 			.run();
 		return { ok: true };
+	});
+
+export const addManualMealPrepItemToWeekFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		manualMealPrepItemInput.omit({ mealPrepId: true }).extend({
+			weekStart: weekStartSchema,
+		}),
+	)
+	.handler(async ({ data }) => {
+		const mealPrepId = ensureMealPrepForWeek(data.weekStart);
+		const id = crypto.randomUUID();
+		db.insert(mealPrepItems)
+			.values({
+				id,
+				mealPrepId,
+				title: data.title.trim(),
+				servings: data.servings,
+				image: data.image?.trim() || null,
+				amount: data.amount?.trim() || null,
+				note: data.note?.trim() || null,
+			})
+			.run();
+		return { id, mealPrepId };
 	});
 
 export const addManualMealPrepItemFn = createServerFn({ method: "POST" })

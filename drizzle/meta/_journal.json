@@ -43,6 +43,13 @@
       "when": 1785075161312,
       "tag": "0005_petite_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1785139951964,
+      "tag": "0006_striped_centennial",
+      "breakpoints": true
     }
   ]
 }

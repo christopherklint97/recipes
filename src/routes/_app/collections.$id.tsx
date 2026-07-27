@@ -117,7 +117,7 @@ function CollectionPage() {
 								onClick={() => addToMealPrep(collection.recipes)}
 							>
 								<CalendarPlus className="size-4" />
-								Add all to meal prep
+								Add all to week
 							</Button>
 							<Button
 								variant={selecting ? "secondary" : "outline"}
@@ -128,7 +128,7 @@ function CollectionPage() {
 								}}
 							>
 								<ListChecks className="size-4" />
-								{selecting ? "Cancel" : "Meal prep"}
+								{selecting ? "Cancel" : "Plan meals"}
 							</Button>
 						</>
 					)}
@@ -258,7 +258,7 @@ function CollectionPage() {
 					<div className="flex-1">
 						<p className="font-medium">{selected.size} recipes selected</p>
 						<p className="text-xs text-muted-foreground">
-							Save them in a named meal prep
+							Add them to one weekly plan
 						</p>
 					</div>
 					<Button
@@ -269,7 +269,7 @@ function CollectionPage() {
 						Clear
 					</Button>
 					<Button onClick={reviewSelected}>
-						Add to meal prep
+						Add to week
 						<CalendarPlus className="size-4" />
 					</Button>
 				</div>

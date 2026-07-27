@@ -7,7 +7,6 @@ import {
 } from "@tanstack/react-router";
 import {
 	CalendarCheck,
-	CalendarRange,
 	ChefHat,
 	Folder,
 	LogOut,
@@ -52,7 +51,6 @@ const NAV_ITEMS = [
 	{ to: "/week", label: "This week", icon: CalendarCheck, exact: true },
 	{ to: "/recipes", label: "Recipes", icon: ChefHat, exact: true },
 	{ to: "/collections", label: "Collections", icon: Folder, exact: false },
-	{ to: "/meal-prep", label: "Meal prep", icon: CalendarRange, exact: false },
 	{ to: "/shopping", label: "Shopping", icon: ShoppingCart, exact: false },
 ] as const;
 
@@ -111,7 +109,7 @@ function LogoutButton() {
 function BottomNav() {
 	return (
 		<nav
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
 			aria-label="Primary navigation"
 		>
 			{NAV_ITEMS.map((item) => (

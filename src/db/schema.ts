@@ -5,6 +5,7 @@ import {
 	real,
 	sqliteTable,
 	text,
+	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 const id = () =>
@@ -100,12 +101,17 @@ export const recipeCollections = sqliteTable("recipe_collections", {
 		.default(sql`(unixepoch())`),
 });
 
-export const mealPreps = sqliteTable("meal_preps", {
-	id: id(),
-	name: text().notNull(),
-	weekStart: text("week_start").notNull(),
-	...timestamps,
-});
+export const mealPreps = sqliteTable(
+	"meal_preps",
+	{
+		id: id(),
+		// Kept for backwards-compatible storage; the UI derives plan labels from weekStart.
+		name: text().notNull(),
+		weekStart: text("week_start").notNull(),
+		...timestamps,
+	},
+	(table) => [uniqueIndex("meal_preps_week_start_unique").on(table.weekStart)],
+);
 
 export const mealPrepRecipes = sqliteTable(
 	"meal_prep_recipes",

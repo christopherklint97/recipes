@@ -29,7 +29,13 @@ import {
 import { listRecipesFn } from "../../server/functions/recipes.ts";
 import { listRecipesByTagFn } from "../../server/functions/tags.ts";
 
-const search = z.object({ tag: z.string().optional() });
+const search = z.object({
+	tag: z.string().optional(),
+	weekStart: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/)
+		.optional(),
+});
 
 export const Route = createFileRoute("/_app/recipes/")({
 	validateSearch: search,
@@ -43,7 +49,7 @@ export const Route = createFileRoute("/_app/recipes/")({
 
 function RecipesPage() {
 	const initial = Route.useLoaderData();
-	const { tag } = Route.useSearch();
+	const { tag, weekStart } = Route.useSearch();
 	const navigate = useNavigate();
 	const [q, setQ] = useState("");
 	const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
@@ -72,7 +78,7 @@ function RecipesPage() {
 	);
 
 	function clearTag() {
-		void navigate({ to: "/recipes", search: {} as never });
+		void navigate({ to: "/recipes", search: weekStart ? { weekStart } : {} });
 	}
 
 	function toggleRecipe(recipe: MealPrepRecipe) {
@@ -125,7 +131,7 @@ function RecipesPage() {
 						}}
 					>
 						<ListChecks className="size-4" />
-						{selecting ? "Cancel" : "Meal prep"}
+						{selecting ? "Cancel" : "Plan meals"}
 					</Button>
 					<Button asChild variant="outline" size="sm">
 						<Link to="/import">
@@ -288,7 +294,7 @@ function RecipesPage() {
 												size="sm"
 												onClick={() => addRecipeToMealPrep(recipe)}
 											>
-												<CalendarPlus className="size-4" /> Add to meal prep
+												<CalendarPlus className="size-4" /> Add to week
 											</Button>
 											{recipe.description && (
 												<p className="line-clamp-2 text-sm text-muted-foreground">
@@ -324,7 +330,7 @@ function RecipesPage() {
 					<div className="min-w-0 flex-1">
 						<p className="font-medium">{selected.size} recipes selected</p>
 						<p className="text-xs text-muted-foreground">
-							Save them together in a named meal prep
+							Add them together to one weekly plan
 						</p>
 					</div>
 					<Button
@@ -335,7 +341,7 @@ function RecipesPage() {
 						Clear
 					</Button>
 					<Button onClick={finishSelection}>
-						Add to meal prep
+						Add to week
 						<CalendarPlus className="size-4" />
 					</Button>
 				</div>
@@ -344,6 +350,7 @@ function RecipesPage() {
 				open={mealPrepOpen}
 				onOpenChange={setMealPrepOpen}
 				recipes={mealPrepRecipes}
+				defaultWeekStart={weekStart}
 			/>
 		</div>
 	);

@@ -17,6 +17,7 @@ import {
 } from "../../components/ui/dialog.tsx";
 import { Input } from "../../components/ui/input.tsx";
 import { Label } from "../../components/ui/label.tsx";
+import { formatGoogleKeepChecklist } from "../../lib/shopping-clipboard.ts";
 import { listRecipesFn } from "../../server/functions/recipes.ts";
 import {
 	addManualItemFn,
@@ -122,6 +123,10 @@ function ShoppingPage() {
 	});
 
 	const totalCount = data.aggregated.length + data.manual.length;
+	const remainingAggregated = data.aggregated.filter((item) => !item.checked);
+	const remainingManual = data.manual.filter((item) => !item.checked);
+	const completedAggregated = data.aggregated.filter((item) => item.checked);
+	const completedManual = data.manual.filter((item) => item.checked);
 	const doneCount =
 		data.aggregated.filter((a) => a.checked).length +
 		data.manual.filter((m) => m.checked).length;
@@ -147,9 +152,9 @@ function ShoppingPage() {
 			parts.push(m.ingredientName);
 			lines.push(parts.join(" "));
 		}
-		const text = lines.join("\n");
+		const checklist = formatGoogleKeepChecklist(lines);
 		try {
-			await navigator.clipboard.writeText(text);
+			await navigator.clipboard.writeText(checklist);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1500);
 		} catch {
@@ -202,6 +207,12 @@ function ShoppingPage() {
 					</Button>
 				)}
 			</div>
+			{copied && (
+				<p role="status" className="text-sm text-muted-foreground">
+					Copied. In Google Keep, start a New list and paste into the first
+					item—or paste into a note and choose More → Show checkboxes.
+				</p>
+			)}
 
 			{data.pickedRecipes.length > 0 && (
 				<section className="space-y-2">
@@ -254,13 +265,13 @@ function ShoppingPage() {
 				</div>
 			) : (
 				<div className="space-y-5">
-					{data.aggregated.length > 0 && (
+					{remainingAggregated.length > 0 && (
 						<section className="space-y-2">
 							<h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 								From recipes
 							</h2>
 							<ul className="divide-y rounded-xl border bg-card">
-								{data.aggregated.map((item) => (
+								{remainingAggregated.map((item) => (
 									<li
 										key={item.key}
 										className="flex items-center gap-3 px-3 py-2.5"
@@ -300,13 +311,13 @@ function ShoppingPage() {
 						</section>
 					)}
 
-					{data.manual.length > 0 && (
+					{remainingManual.length > 0 && (
 						<section className="space-y-2">
 							<h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 								Manual
 							</h2>
 							<ul className="divide-y rounded-xl border bg-card">
-								{data.manual.map((m) => (
+								{remainingManual.map((m) => (
 									<li
 										key={m.id}
 										className="flex items-center gap-3 px-3 py-2.5"
@@ -342,6 +353,67 @@ function ShoppingPage() {
 											className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
 											onClick={() => delManual.mutate(m.id)}
 											aria-label="Remove"
+										>
+											<Trash2 className="size-4" />
+										</button>
+									</li>
+								))}
+							</ul>
+						</section>
+					)}
+
+					{completedAggregated.length + completedManual.length > 0 && (
+						<section className="space-y-2 border-t pt-5">
+							<h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								Completed
+							</h2>
+							<ul className="divide-y rounded-xl border bg-card">
+								{completedAggregated.map((item) => (
+									<li
+										key={item.key}
+										className="flex items-center gap-3 px-3 py-2.5 text-muted-foreground"
+									>
+										<Checkbox
+											checked={true}
+											onCheckedChange={(value) =>
+												checkAgg.mutate({
+													key: item.key,
+													checked: value === true,
+												})
+											}
+										/>
+										<span className="flex-1 text-sm line-through">
+											{item.quantity != null &&
+												`${formatQty(item.quantity)}${item.unknownQty ? "+" : ""} `}
+											{item.unit && `${item.unit} `}
+											{item.ingredientName}
+										</span>
+									</li>
+								))}
+								{completedManual.map((item) => (
+									<li
+										key={item.id}
+										className="flex items-center gap-3 px-3 py-2.5 text-muted-foreground"
+									>
+										<Checkbox
+											checked={true}
+											onCheckedChange={(value) =>
+												toggleManual.mutate({
+													id: item.id,
+													checked: value === true,
+												})
+											}
+										/>
+										<span className="flex-1 text-sm line-through">
+											{item.quantity != null && `${formatQty(item.quantity)} `}
+											{item.unit && `${item.unit} `}
+											{item.ingredientName}
+										</span>
+										<button
+											type="button"
+											className="rounded p-1 hover:bg-accent hover:text-foreground"
+											onClick={() => delManual.mutate(item.id)}
+											aria-label={`Remove ${item.ingredientName}`}
 										>
 											<Trash2 className="size-4" />
 										</button>

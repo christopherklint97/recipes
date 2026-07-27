@@ -3,6 +3,7 @@ import { Pencil, Plus, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
 	addManualMealPrepItemFn,
+	addManualMealPrepItemToWeekFn,
 	updateManualMealPrepItemFn,
 } from "../../server/functions/meal-preps.ts";
 import { Button } from "../ui/button.tsx";
@@ -27,12 +28,14 @@ export type ManualMealItemValue = {
 
 export function ManualMealItemDialog({
 	mealPrepId,
+	weekStart,
 	mealPrepName,
 	item,
 	open,
 	onOpenChange,
 }: {
-	mealPrepId: string;
+	mealPrepId?: string;
+	weekStart?: string;
 	mealPrepName: string;
 	item?: ManualMealItemValue;
 	open: boolean;
@@ -59,20 +62,30 @@ export function ManualMealItemDialog({
 	const save = useMutation({
 		mutationFn: () => {
 			const data = {
-				mealPrepId,
 				title,
 				servings,
 				image: image || null,
 				amount: amount || null,
 				note: note || null,
 			};
-			return item
-				? updateManualMealPrepItemFn({ data: { ...data, id: item.id } })
-				: addManualMealPrepItemFn({ data });
+			if (item && mealPrepId) {
+				return updateManualMealPrepItemFn({
+					data: { ...data, id: item.id, mealPrepId },
+				});
+			}
+			if (mealPrepId) {
+				return addManualMealPrepItemFn({ data: { ...data, mealPrepId } });
+			}
+			if (weekStart) {
+				return addManualMealPrepItemToWeekFn({ data: { ...data, weekStart } });
+			}
+			throw new Error("A meal plan or week is required");
 		},
 		onSuccess: async () => {
 			await Promise.all([
-				qc.invalidateQueries({ queryKey: ["meal-prep", mealPrepId] }),
+				...(mealPrepId
+					? [qc.invalidateQueries({ queryKey: ["meal-prep", mealPrepId] })]
+					: []),
 				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
 				qc.invalidateQueries({ queryKey: ["current-week"] }),
 			]);

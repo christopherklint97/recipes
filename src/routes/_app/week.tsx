@@ -12,7 +12,6 @@ import {
 	Utensils,
 } from "lucide-react";
 import { useState } from "react";
-import { AddToMealPrepDialog } from "../../components/meal-prep/AddToMealPrepDialog.tsx";
 import {
 	ManualMealItemDialog,
 	type ManualMealItemValue,
@@ -52,9 +51,9 @@ function CurrentWeekPage() {
 	const qc = useQueryClient();
 	const { openMealPrep } = useMealPrep();
 	const [weekOffset, setWeekOffset] = useState(0);
-	const [createOpen, setCreateOpen] = useState(false);
 	const [manualPlan, setManualPlan] = useState<{
-		id: string;
+		id?: string;
+		weekStart?: string;
 		name: string;
 		item?: ManualMealItemValue;
 	} | null>(null);
@@ -133,9 +132,6 @@ function CurrentWeekPage() {
 							<ShoppingCart className="size-4" /> Shop for recipes
 						</Button>
 					)}
-					<Button variant="outline" onClick={() => setCreateOpen(true)}>
-						<Plus className="size-4" /> New plan
-					</Button>
 				</div>
 			</header>
 
@@ -150,12 +146,27 @@ function CurrentWeekPage() {
 					</div>
 					<h2 className="text-lg font-semibold">Nothing planned yet</h2>
 					<p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-						Create a plan for {weekTitle.toLowerCase()}, then add saved recipes
-						or quick meals.
+						Add a saved recipe or quick meal. The weekly plan will be created
+						automatically.
 					</p>
-					<Button className="mt-5" onClick={() => setCreateOpen(true)}>
-						<Plus className="size-4" /> Plan {weekTitle.toLowerCase()}
-					</Button>
+					<div className="mt-5 flex flex-wrap justify-center gap-2">
+						<Button asChild>
+							<Link to="/recipes" search={{ weekStart: data.weekStart }}>
+								<ChefHat className="size-4" /> Add recipe
+							</Link>
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() =>
+								setManualPlan({
+									weekStart: data.weekStart,
+									name: formatWeek(data.weekStart),
+								})
+							}
+						>
+							<Plus className="size-4" /> Quick meal
+						</Button>
+					</div>
 				</div>
 			) : (
 				<div className="space-y-8">
@@ -164,34 +175,21 @@ function CurrentWeekPage() {
 						<Summary value={summary.servings} label="servings" />
 					</div>
 					{data.plans.map((plan) => (
-						<section
-							key={plan.id}
-							className="space-y-3"
-							aria-labelledby={`plan-${plan.id}`}
-						>
-							<div className="flex flex-wrap items-center justify-between gap-2">
-								<div>
-									<h2 id={`plan-${plan.id}`} className="text-xl font-semibold">
-										{plan.name}
-									</h2>
-									<Link
-										to="/meal-prep/$id"
-										params={{ id: plan.id }}
-										className="text-xs text-muted-foreground hover:text-foreground"
-									>
-										Open and edit plan
-									</Link>
-								</div>
+						<section key={plan.id} className="space-y-3">
+							<div className="flex flex-wrap items-center justify-end gap-2">
 								<div className="flex gap-2">
 									<Button asChild variant="outline" size="sm">
-										<Link to="/recipes">
+										<Link to="/recipes" search={{ weekStart: data.weekStart }}>
 											<ChefHat className="size-4" /> Add recipe
 										</Link>
 									</Button>
 									<Button
 										size="sm"
 										onClick={() =>
-											setManualPlan({ id: plan.id, name: plan.name })
+											setManualPlan({
+												id: plan.id,
+												name: formatWeek(plan.weekStart),
+											})
 										}
 									>
 										<Plus className="size-4" /> Quick meal
@@ -307,14 +305,10 @@ function CurrentWeekPage() {
 					))}
 				</div>
 			)}
-			<AddToMealPrepDialog
-				open={createOpen}
-				onOpenChange={setCreateOpen}
-				defaultWeekStart={data.weekStart}
-			/>
 			{manualPlan && (
 				<ManualMealItemDialog
 					mealPrepId={manualPlan.id}
+					weekStart={manualPlan.weekStart}
 					mealPrepName={manualPlan.name}
 					item={manualPlan.item}
 					open={true}

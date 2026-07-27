@@ -117,7 +117,7 @@ function RecipeDetailPage() {
 						onClick={() => setMealPrepOpen(true)}
 					>
 						<CalendarPlus className="size-4" />
-						Add to meal prep
+						Add to week
 					</Button>
 					<CollectionPickerButton recipeId={recipe.id} />
 					<Button asChild variant="outline" size="sm">
