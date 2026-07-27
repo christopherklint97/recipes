@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Copy, Minus, Plus, Search, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	type MealPrepRecipe,
 	useMealPrep,
@@ -49,8 +49,23 @@ function ShoppingPage() {
 		queryKey: ["shopping"],
 		queryFn: () => listShoppingFn(),
 		initialData: initial,
+		refetchInterval: 2_000,
+		refetchIntervalInBackground: true,
+		refetchOnWindowFocus: "always",
 	});
 	const data = dataQ.data;
+
+	useEffect(() => {
+		const events = new EventSource("/api/shopping/events");
+		const refresh = () => {
+			void qc.invalidateQueries({ queryKey: ["shopping"] });
+		};
+		events.addEventListener("message", refresh);
+		return () => {
+			events.removeEventListener("message", refresh);
+			events.close();
+		};
+	}, [qc]);
 
 	const setRecipe = useMutation({
 		mutationFn: (vars: { recipeId: string; servings: number }) =>

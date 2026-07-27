@@ -10,6 +10,7 @@ import {
 	shoppingRecipes,
 } from "../../db/schema.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
+import { emitShoppingChanged } from "../shopping-events.ts";
 
 function normalizeIngredientName(name: string): string {
 	return name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -152,6 +153,7 @@ export const setShoppingRecipeFn = createServerFn({ method: "POST" })
 				.values({ recipeId: data.recipeId, servings: data.servings })
 				.run();
 		}
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -187,6 +189,7 @@ export const setShoppingRecipesFn = createServerFn({ method: "POST" })
 			}
 		});
 
+		emitShoppingChanged();
 		return { ok: true, count: selections.length };
 	});
 
@@ -223,6 +226,7 @@ export const restoreShoppingRecipesFn = createServerFn({ method: "POST" })
 				}
 			}
 		});
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -233,6 +237,7 @@ export const removeShoppingRecipeFn = createServerFn({ method: "POST" })
 		db.delete(shoppingRecipes)
 			.where(eq(shoppingRecipes.recipeId, data.recipeId))
 			.run();
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -248,6 +253,7 @@ export const setAggregateCheckedFn = createServerFn({ method: "POST" })
 		} else {
 			db.delete(shoppingChecks).where(eq(shoppingChecks.key, data.key)).run();
 		}
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -259,6 +265,7 @@ export const toggleManualItemFn = createServerFn({ method: "POST" })
 			.set({ checked: data.checked })
 			.where(eq(shoppingItems.id, data.id))
 			.run();
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -282,6 +289,7 @@ export const addManualItemFn = createServerFn({ method: "POST" })
 				checked: false,
 			})
 			.run();
+		emitShoppingChanged();
 		return { id };
 	});
 
@@ -290,6 +298,7 @@ export const deleteManualItemFn = createServerFn({ method: "POST" })
 	.validator(z.object({ id: z.string() }))
 	.handler(async ({ data }) => {
 		db.delete(shoppingItems).where(eq(shoppingItems.id, data.id)).run();
+		emitShoppingChanged();
 		return { ok: true };
 	});
 
@@ -299,5 +308,6 @@ export const clearShoppingFn = createServerFn({ method: "POST" })
 		db.delete(shoppingRecipes).run();
 		db.delete(shoppingChecks).run();
 		db.delete(shoppingItems).run();
+		emitShoppingChanged();
 		return { ok: true };
 	});

@@ -25,6 +25,7 @@ import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiImagesNameRouteImport } from './routes/api/images/$name'
+import { Route as ApiShoppingEventsRouteImport } from './routes/api/shopping/events'
 import { Route as ApiUploadImageRouteImport } from './routes/api/upload/image'
 import { Route as AppRecipesIdCookRouteImport } from './routes/_app/recipes.$id_.cook'
 import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id_.edit'
@@ -108,6 +109,11 @@ const ApiImagesNameRoute = ApiImagesNameRouteImport.update({
   path: '/api/images/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShoppingEventsRoute = ApiShoppingEventsRouteImport.update({
+  id: '/api/shopping/events',
+  path: '/api/shopping/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiUploadImageRoute = ApiUploadImageRouteImport.update({
   id: '/api/upload/image',
   path: '/api/upload/image',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/images/$name': typeof ApiImagesNameRoute
+  '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/collections/': typeof AppCollectionsIndexRoute
   '/meal-prep/': typeof AppMealPrepIndexRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/images/$name': typeof ApiImagesNameRoute
+  '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/collections': typeof AppCollectionsIndexRoute
   '/meal-prep': typeof AppMealPrepIndexRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/images/$name': typeof ApiImagesNameRoute
+  '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
   '/_app/collections/': typeof AppCollectionsIndexRoute
   '/_app/meal-prep/': typeof AppMealPrepIndexRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/images/$name'
+    | '/api/shopping/events'
     | '/api/upload/image'
     | '/collections/'
     | '/meal-prep/'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/images/$name'
+    | '/api/shopping/events'
     | '/api/upload/image'
     | '/collections'
     | '/meal-prep'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/images/$name'
+    | '/api/shopping/events'
     | '/api/upload/image'
     | '/_app/collections/'
     | '/_app/meal-prep/'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiImagesNameRoute: typeof ApiImagesNameRoute
+  ApiShoppingEventsRoute: typeof ApiShoppingEventsRoute
   ApiUploadImageRoute: typeof ApiUploadImageRoute
 }
 
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImagesNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/shopping/events': {
+      id: '/api/shopping/events'
+      path: '/api/shopping/events'
+      fullPath: '/api/shopping/events'
+      preLoaderRoute: typeof ApiShoppingEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/upload/image': {
       id: '/api/upload/image'
       path: '/api/upload/image'
@@ -437,6 +457,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiImagesNameRoute: ApiImagesNameRoute,
+  ApiShoppingEventsRoute: ApiShoppingEventsRoute,
   ApiUploadImageRoute: ApiUploadImageRoute,
 }
 export const routeTree = rootRouteImport
