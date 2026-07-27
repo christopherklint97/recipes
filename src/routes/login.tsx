@@ -38,7 +38,7 @@ function LoginPage() {
 			if (res.ok) {
 				await router.invalidate();
 				await router.navigate({
-					to: redirect_to?.startsWith("/") ? redirect_to : "/",
+					to: redirect_to?.startsWith("/") ? redirect_to : "/week",
 				});
 				return;
 			}

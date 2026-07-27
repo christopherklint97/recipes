@@ -31,7 +31,7 @@ const config = defineConfig({
 				name: "Recipes",
 				short_name: "Recipes",
 				description: "Personal recipe collection and shopping list.",
-				start_url: "/",
+				start_url: "/week",
 				scope: "/",
 				display: "standalone",
 				orientation: "portrait",
