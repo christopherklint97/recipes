@@ -236,7 +236,10 @@ function MealPrepDetailPage() {
 							<Link
 								to="/recipes/$id"
 								params={{ id: recipe.id }}
-								search={{ servings: recipe.servings }}
+								search={{
+									servings: recipe.servings,
+									fromWeek: mealPrep.weekStart,
+								}}
 							>
 								{recipe.heroImage ? (
 									<img

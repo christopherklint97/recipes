@@ -50,6 +50,7 @@ import { deleteRecipeFn, getRecipeFn } from "../../server/functions/recipes.ts";
 export const Route = createFileRoute("/_app/recipes/$id")({
 	validateSearch: z.object({
 		servings: z.coerce.number().int().min(1).max(100).optional(),
+		fromWeek: z.string().optional(),
 	}),
 	loader: async ({ params }) => {
 		const recipe = await getRecipeFn({ data: { id: params.id } });
@@ -61,7 +62,7 @@ export const Route = createFileRoute("/_app/recipes/$id")({
 
 function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
-	const { servings: mealPrepServings } = Route.useSearch();
+	const { servings: mealPrepServings, fromWeek } = Route.useSearch();
 	const router = useRouter();
 	const [mealPrepOpen, setMealPrepOpen] = useState(false);
 	const [servings, setServings] = useState(mealPrepServings ?? recipe.servings);
@@ -74,7 +75,9 @@ function RecipeDetailPage() {
 	const del = useMutation({
 		mutationFn: () => deleteRecipeFn({ data: { id: recipe.id } }),
 		onSuccess: () => {
-			void router.navigate({ to: "/recipes" });
+			void (fromWeek
+				? router.navigate({ to: "/week", search: { weekStart: fromWeek } })
+				: router.navigate({ to: "/recipes" }));
 		},
 	});
 
@@ -86,7 +89,16 @@ function RecipeDetailPage() {
 				variant="ghost"
 				size="sm"
 				className="-ml-2"
-				onClick={() => router.history.back()}
+				onClick={() => {
+					if (fromWeek) {
+						void router.navigate({
+							to: "/week",
+							search: { weekStart: fromWeek },
+						});
+					} else {
+						router.history.back();
+					}
+				}}
 			>
 				<ArrowLeft className="size-4" />
 				Back
@@ -121,7 +133,11 @@ function RecipeDetailPage() {
 					</Button>
 					<CollectionPickerButton recipeId={recipe.id} />
 					<Button asChild variant="outline" size="sm">
-						<Link to="/recipes/$id/edit" params={{ id: recipe.id }}>
+						<Link
+							to="/recipes/$id/edit"
+							params={{ id: recipe.id }}
+							search={fromWeek ? { fromWeek } : {}}
+						>
 							<Pencil className="size-4" />
 							Edit
 						</Link>

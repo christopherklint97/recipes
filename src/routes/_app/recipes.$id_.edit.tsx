@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
+import { z } from "zod";
 import {
 	RecipeForm,
 	type RecipeFormValues,
@@ -8,6 +9,7 @@ import {
 import { getRecipeFn, updateRecipeFn } from "../../server/functions/recipes.ts";
 
 export const Route = createFileRoute("/_app/recipes/$id_/edit")({
+	validateSearch: z.object({ fromWeek: z.string().optional() }),
 	loader: async ({ params }) => {
 		const recipe = await getRecipeFn({ data: { id: params.id } });
 		if (!recipe) throw notFound();
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/_app/recipes/$id_/edit")({
 
 function EditRecipePage() {
 	const recipe = Route.useLoaderData();
+	const { fromWeek } = Route.useSearch();
 	const router = useRouter();
 
 	const update = useMutation({
@@ -30,7 +33,11 @@ function EditRecipePage() {
 				},
 			}),
 		onSuccess: ({ id }) => {
-			void router.navigate({ to: "/recipes/$id", params: { id } });
+			void router.navigate({
+				to: "/recipes/$id",
+				params: { id },
+				search: fromWeek ? { fromWeek } : {},
+			});
 		},
 	});
 

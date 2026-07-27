@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Copy, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import {
+	Check,
+	ChevronDown,
+	Copy,
+	Minus,
+	Plus,
+	Search,
+	Trash2,
+	X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	type MealPrepRecipe,
@@ -147,6 +156,7 @@ function ShoppingPage() {
 		data.manual.filter((m) => m.checked).length;
 
 	const [copied, setCopied] = useState(false);
+	const [cookingOpen, setCookingOpen] = useState(false);
 	async function copyList() {
 		const lines: string[] = [];
 		for (const a of data.aggregated) {
@@ -231,44 +241,54 @@ function ShoppingPage() {
 
 			{data.pickedRecipes.length > 0 && (
 				<section className="space-y-2">
-					<h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-						Cooking
-					</h2>
-					<ul className="space-y-2">
-						{data.pickedRecipes.map((r) => (
-							<li
-								key={r.recipeId}
-								className="flex items-center gap-3 rounded-xl border bg-card p-2"
-							>
-								{r.heroImage ? (
-									<img
-										src={r.heroImage}
-										alt=""
-										className="size-12 shrink-0 rounded-md object-cover"
-									/>
-								) : (
-									<div className="size-12 shrink-0 rounded-md bg-muted" />
-								)}
-								<span className="flex-1 truncate text-sm font-medium">
-									{r.title}
-								</span>
-								<ServingsStepper
-									value={r.servings}
-									onChange={(v) =>
-										setRecipe.mutate({ recipeId: r.recipeId, servings: v })
-									}
-								/>
-								<button
-									type="button"
-									className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-									onClick={() => removeRecipe.mutate(r.recipeId)}
-									aria-label="Remove recipe"
+					<button
+						type="button"
+						className="flex w-full items-center justify-between rounded-xl border bg-card px-3 py-2.5 text-left text-sm font-semibold"
+						onClick={() => setCookingOpen((open) => !open)}
+						aria-expanded={cookingOpen}
+					>
+						<span>Cooking ({data.pickedRecipes.length})</span>
+						<ChevronDown
+							className={`size-4 transition-transform ${cookingOpen ? "rotate-180" : ""}`}
+						/>
+					</button>
+					{cookingOpen && (
+						<ul className="space-y-2">
+							{data.pickedRecipes.map((r) => (
+								<li
+									key={r.recipeId}
+									className="flex items-center gap-3 rounded-xl border bg-card p-2"
 								>
-									<X className="size-4" />
-								</button>
-							</li>
-						))}
-					</ul>
+									{r.heroImage ? (
+										<img
+											src={r.heroImage}
+											alt=""
+											className="size-12 shrink-0 rounded-md object-cover"
+										/>
+									) : (
+										<div className="size-12 shrink-0 rounded-md bg-muted" />
+									)}
+									<span className="flex-1 truncate text-sm font-medium">
+										{r.title}
+									</span>
+									<ServingsStepper
+										value={r.servings}
+										onChange={(v) =>
+											setRecipe.mutate({ recipeId: r.recipeId, servings: v })
+										}
+									/>
+									<button
+										type="button"
+										className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+										onClick={() => removeRecipe.mutate(r.recipeId)}
+										aria-label="Remove recipe"
+									>
+										<X className="size-4" />
+									</button>
+								</li>
+							))}
+						</ul>
+					)}
 				</section>
 			)}
 

@@ -28,6 +28,13 @@ export function normalizeToWeekStart(value: string): string {
 	return weekStartFromOffset(0, new Date(year, month - 1, day));
 }
 
+export function shiftWeekStart(value: string, weeks: number): string {
+	const [year, month, day] = value.split("-").map(Number);
+	const date = new Date(year, month - 1, day);
+	date.setDate(date.getDate() + weeks * 7);
+	return toDateInput(date);
+}
+
 export function getIsoWeek(value: string): { week: number; year: number } {
 	const [year, month, day] = value.split("-").map(Number);
 	const date = new Date(Date.UTC(year, month - 1, day));

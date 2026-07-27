@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	CalendarDays,
 	ChefHat,
@@ -12,6 +12,7 @@ import {
 	Utensils,
 } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
 import {
 	ManualMealItemDialog,
 	type ManualMealItemValue,
@@ -22,16 +23,18 @@ import { summarizeDishes } from "../../lib/planning.ts";
 import {
 	formatWeek,
 	formatWeekRange,
+	isIsoWeekStart,
+	shiftWeekStart,
 	weekStartFromOffset,
 } from "../../lib/week.ts";
 import {
 	getMealPrepFn,
 	listMealPrepsFn,
 	removeManualMealPrepItemFn,
+	removeRecipeFromMealPrepFn,
 } from "../../server/functions/meal-preps.ts";
 
-async function loadWeek(offset = 0) {
-	const weekStart = weekStartFromOffset(offset);
+async function loadWeek(weekStart = weekStartFromOffset()) {
 	const plans = (await listMealPrepsFn()).filter(
 		(plan) => plan.weekStart === weekStart,
 	);
@@ -42,37 +45,44 @@ async function loadWeek(offset = 0) {
 }
 
 export const Route = createFileRoute("/_app/week")({
+	validateSearch: z.object({ weekStart: z.string().optional() }),
 	loader: () => loadWeek(),
 	component: CurrentWeekPage,
 });
 
 function CurrentWeekPage() {
 	const initial = Route.useLoaderData();
+	const { weekStart: requestedWeekStart } = Route.useSearch();
+	const navigate = useNavigate({ from: Route.fullPath });
 	const qc = useQueryClient();
 	const { openMealPrep } = useMealPrep();
-	const [weekOffset, setWeekOffset] = useState(0);
 	const [manualPlan, setManualPlan] = useState<{
 		id?: string;
 		weekStart?: string;
 		name: string;
 		item?: ManualMealItemValue;
 	} | null>(null);
-	const selectedWeekStart = weekStartFromOffset(weekOffset);
+	const currentWeekStart = weekStartFromOffset();
+	const selectedWeekStart =
+		requestedWeekStart && isIsoWeekStart(requestedWeekStart)
+			? requestedWeekStart
+			: currentWeekStart;
 	const { data = { weekStart: selectedWeekStart, plans: [] }, isPending } =
 		useQuery({
 			queryKey: ["current-week", selectedWeekStart],
-			queryFn: () => loadWeek(weekOffset),
-			initialData: weekOffset === 0 ? initial : undefined,
+			queryFn: () => loadWeek(selectedWeekStart),
+			initialData:
+				selectedWeekStart === initial.weekStart ? initial : undefined,
 		});
 	const recipes = data.plans.flatMap((plan) => plan.recipes);
 	const manualItems = data.plans.flatMap((plan) => plan.manualItems);
 	const summary = summarizeDishes(recipes, manualItems);
 	const weekTitle =
-		weekOffset === 0
+		selectedWeekStart === currentWeekStart
 			? "This week"
-			: weekOffset === 1
+			: selectedWeekStart === shiftWeekStart(currentWeekStart, 1)
 				? "Next week"
-				: weekOffset === -1
+				: selectedWeekStart === shiftWeekStart(currentWeekStart, -1)
 					? "Last week"
 					: formatWeek(data.weekStart);
 	const removeManual = useMutation({
@@ -80,6 +90,21 @@ function CurrentWeekPage() {
 		onSuccess: () =>
 			Promise.all([
 				qc.invalidateQueries({ queryKey: ["current-week"] }),
+				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
+			]),
+	});
+	const removeRecipe = useMutation({
+		mutationFn: ({
+			mealPrepId,
+			recipeId,
+		}: {
+			mealPrepId: string;
+			recipeId: string;
+		}) => removeRecipeFromMealPrepFn({ data: { mealPrepId, recipeId } }),
+		onSuccess: (_result, { mealPrepId }) =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: ["current-week"] }),
+				qc.invalidateQueries({ queryKey: ["meal-prep", mealPrepId] }),
 				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
 			]),
 	});
@@ -97,7 +122,11 @@ function CurrentWeekPage() {
 							variant="ghost"
 							size="icon"
 							className="size-9"
-							onClick={() => setWeekOffset((offset) => offset - 1)}
+							onClick={() =>
+								void navigate({
+									search: { weekStart: shiftWeekStart(selectedWeekStart, -1) },
+								})
+							}
 							aria-label="Show previous week"
 						>
 							<ChevronLeft className="size-4" />
@@ -110,16 +139,20 @@ function CurrentWeekPage() {
 							variant="ghost"
 							size="icon"
 							className="size-9"
-							onClick={() => setWeekOffset((offset) => offset + 1)}
+							onClick={() =>
+								void navigate({
+									search: { weekStart: shiftWeekStart(selectedWeekStart, 1) },
+								})
+							}
 							aria-label="Show next week"
 						>
 							<ChevronRight className="size-4" />
 						</Button>
-						{weekOffset !== 0 && (
+						{selectedWeekStart !== currentWeekStart && (
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={() => setWeekOffset(0)}
+								onClick={() => void navigate({ search: {} })}
 							>
 								Today
 							</Button>
@@ -205,13 +238,16 @@ function CurrentWeekPage() {
 									{plan.recipes.map((recipe) => (
 										<li
 											key={`recipe-${recipe.id}`}
-											className="overflow-hidden rounded-2xl border bg-card shadow-sm"
+											className="flex items-center overflow-hidden rounded-2xl border bg-card shadow-sm"
 										>
 											<Link
 												to="/recipes/$id"
 												params={{ id: recipe.id }}
-												search={{ servings: recipe.servings }}
-												className="flex h-full items-center gap-3 p-3"
+												search={{
+													servings: recipe.servings,
+													fromWeek: data.weekStart,
+												}}
+												className="flex min-w-0 flex-1 items-center gap-3 p-3"
 											>
 												{recipe.heroImage ? (
 													<img
@@ -234,6 +270,44 @@ function CurrentWeekPage() {
 													</p>
 												</div>
 											</Link>
+											<div className="flex shrink-0 gap-1 pr-2">
+												<Button
+													asChild
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+												>
+													<Link
+														to="/recipes/$id/edit"
+														params={{ id: recipe.id }}
+														search={{ fromWeek: data.weekStart }}
+														aria-label={`Edit ${recipe.title}`}
+													>
+														<Pencil className="size-4" />
+													</Link>
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-11 sm:size-9"
+													onClick={() => {
+														if (
+															confirm(
+																`Remove ${recipe.title} from ${weekTitle.toLowerCase()}?`,
+															)
+														) {
+															removeRecipe.mutate({
+																mealPrepId: plan.id,
+																recipeId: recipe.id,
+															});
+														}
+													}}
+													disabled={removeRecipe.isPending}
+													aria-label={`Remove ${recipe.title}`}
+												>
+													<Trash2 className="size-4" />
+												</Button>
+											</div>
 										</li>
 									))}
 									{plan.manualItems.map((item) => (

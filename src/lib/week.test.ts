@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isIsoWeekStart, normalizeToWeekStart } from "./week.ts";
+import {
+	isIsoWeekStart,
+	normalizeToWeekStart,
+	shiftWeekStart,
+} from "./week.ts";
 
 describe("ISO week starts", () => {
 	it("accepts only valid Mondays", () => {
@@ -11,5 +15,10 @@ describe("ISO week starts", () => {
 	it("normalizes dates to their Monday", () => {
 		expect(normalizeToWeekStart("2026-08-02")).toBe("2026-07-27");
 		expect(normalizeToWeekStart("2026-08-03")).toBe("2026-08-03");
+	});
+
+	it("moves between represented weeks without losing the ISO Monday", () => {
+		expect(shiftWeekStart("2026-12-28", 1)).toBe("2027-01-04");
+		expect(shiftWeekStart("2027-01-04", -1)).toBe("2026-12-28");
 	});
 });
