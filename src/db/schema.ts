@@ -123,6 +123,8 @@ export const mealPrepRecipes = sqliteTable(
 			.notNull()
 			.references(() => recipes.id, { onDelete: "cascade" }),
 		servings: integer().notNull().default(2),
+		cooked: integer({ mode: "boolean" }).notNull().default(false),
+		position: integer(),
 		addedAt: integer("added_at", { mode: "timestamp" })
 			.notNull()
 			.default(sql`(unixepoch())`),
@@ -137,9 +139,11 @@ export const mealPrepItems = sqliteTable("meal_prep_items", {
 		.references(() => mealPreps.id, { onDelete: "cascade" }),
 	title: text().notNull(),
 	servings: integer().notNull().default(2),
+	cooked: integer({ mode: "boolean" }).notNull().default(false),
 	image: text(),
 	amount: text(),
 	note: text(),
+	position: integer(),
 	addedAt: integer("added_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),

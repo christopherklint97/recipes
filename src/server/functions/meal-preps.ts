@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/index.ts";
 import {
@@ -18,6 +18,10 @@ const weekStartSchema = z
 	.regex(/^\d{4}-\d{2}-\d{2}$/)
 	.refine(isIsoWeekStart, "Week start must be a valid ISO-week Monday");
 const recipeIdsSchema = z.array(z.string().min(1)).max(100);
+const mealPrepOrderItemSchema = z.discriminatedUnion("type", [
+	z.object({ type: z.literal("recipe"), id: z.string().min(1) }),
+	z.object({ type: z.literal("manual"), id: z.string().min(1) }),
+]);
 
 function ensureMealPrepForWeek(weekStart: string): string {
 	const existing = db
@@ -100,6 +104,8 @@ export const getMealPrepFn = createServerFn({ method: "GET" })
 			.select({
 				recipeId: mealPrepRecipes.recipeId,
 				servings: mealPrepRecipes.servings,
+				cooked: mealPrepRecipes.cooked,
+				position: mealPrepRecipes.position,
 				addedAt: mealPrepRecipes.addedAt,
 			})
 			.from(mealPrepRecipes)
@@ -150,6 +156,9 @@ export const getMealPrepFn = createServerFn({ method: "GET" })
 							{
 								...recipe,
 								servings: selection.servings,
+								cooked: selection.cooked,
+								position: selection.position,
+								addedAt: selection.addedAt,
 								ingredientCount: countById.get(recipe.id) ?? 0,
 							},
 						]
@@ -293,6 +302,100 @@ export const setMealPrepRecipeServingsFn = createServerFn({ method: "POST" })
 				sql`${mealPrepRecipes.mealPrepId} = ${data.mealPrepId} and ${mealPrepRecipes.recipeId} = ${data.recipeId}`,
 			)
 			.run();
+		return { ok: true };
+	});
+
+export const setMealPrepItemCookedFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		z.object({
+			mealPrepId: z.string().min(1),
+			type: z.enum(["recipe", "manual"]),
+			id: z.string().min(1),
+			cooked: z.boolean(),
+		}),
+	)
+	.handler(async ({ data }) => {
+		if (data.type === "recipe") {
+			db.update(mealPrepRecipes)
+				.set({ cooked: data.cooked })
+				.where(
+					and(
+						eq(mealPrepRecipes.mealPrepId, data.mealPrepId),
+						eq(mealPrepRecipes.recipeId, data.id),
+					),
+				)
+				.run();
+		} else {
+			db.update(mealPrepItems)
+				.set({ cooked: data.cooked })
+				.where(
+					and(
+						eq(mealPrepItems.mealPrepId, data.mealPrepId),
+						eq(mealPrepItems.id, data.id),
+					),
+				)
+				.run();
+		}
+		return { ok: true };
+	});
+
+export const reorderMealPrepItemsFn = createServerFn({ method: "POST" })
+	.middleware([authedMiddleware])
+	.validator(
+		z.object({
+			mealPrepId: z.string().min(1),
+			items: z.array(mealPrepOrderItemSchema).min(1).max(200),
+		}),
+	)
+	.handler(async ({ data }) => {
+		const recipeIds = db
+			.select({ id: mealPrepRecipes.recipeId })
+			.from(mealPrepRecipes)
+			.where(eq(mealPrepRecipes.mealPrepId, data.mealPrepId))
+			.all()
+			.map(({ id }) => `recipe:${id}`);
+		const manualIds = db
+			.select({ id: mealPrepItems.id })
+			.from(mealPrepItems)
+			.where(eq(mealPrepItems.mealPrepId, data.mealPrepId))
+			.all()
+			.map(({ id }) => `manual:${id}`);
+		const existing = new Set([...recipeIds, ...manualIds]);
+		const requested = data.items.map((item) => `${item.type}:${item.id}`);
+		if (
+			existing.size !== requested.length ||
+			new Set(requested).size !== requested.length ||
+			requested.some((key) => !existing.has(key))
+		) {
+			throw new Error("Plan order is out of date. Refresh and try again.");
+		}
+
+		db.transaction((tx) => {
+			data.items.forEach((item, position) => {
+				if (item.type === "recipe") {
+					tx.update(mealPrepRecipes)
+						.set({ position })
+						.where(
+							and(
+								eq(mealPrepRecipes.mealPrepId, data.mealPrepId),
+								eq(mealPrepRecipes.recipeId, item.id),
+							),
+						)
+						.run();
+				} else {
+					tx.update(mealPrepItems)
+						.set({ position })
+						.where(
+							and(
+								eq(mealPrepItems.mealPrepId, data.mealPrepId),
+								eq(mealPrepItems.id, item.id),
+							),
+						)
+						.run();
+				}
+			});
+		});
 		return { ok: true };
 	});
 

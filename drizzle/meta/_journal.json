@@ -50,6 +50,13 @@
       "when": 1785139951964,
       "tag": "0006_striped_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1785245269028,
+      "tag": "0007_tearful_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }
