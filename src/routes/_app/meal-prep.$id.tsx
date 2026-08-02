@@ -239,6 +239,7 @@ function MealPrepDetailPage() {
 								search={{
 									servings: recipe.servings,
 									fromWeek: mealPrep.weekStart,
+									mealPrepId: mealPrep.id,
 								}}
 							>
 								{recipe.heroImage ? (

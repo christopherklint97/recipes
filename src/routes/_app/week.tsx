@@ -412,6 +412,7 @@ function CurrentWeekPage() {
 									<WeekPlanItems
 										items={items}
 										weekStart={data.weekStart}
+										planId={plan.id}
 										weekTitle={weekTitle}
 										editingOrder={editingOrder}
 										orderPending={reorder.isPending}
@@ -462,6 +463,7 @@ function WeekPlanItems({
 	items,
 	weekStart,
 	weekTitle,
+	planId,
 	editingOrder,
 	orderPending,
 	onMove,
@@ -475,6 +477,7 @@ function WeekPlanItems({
 	items: OrderedPlanItem[];
 	weekStart: string;
 	weekTitle: string;
+	planId: string;
 	editingOrder: boolean;
 	orderPending: boolean;
 	onMove: (index: number, direction: -1 | 1) => void;
@@ -507,7 +510,11 @@ function WeekPlanItems({
 							<Link
 								to="/recipes/$id"
 								params={{ id: recipe.id }}
-								search={{ servings: recipe.servings, fromWeek: weekStart }}
+								search={{
+									servings: recipe.servings,
+									fromWeek: weekStart,
+									mealPrepId: planId,
+								}}
 								className="flex min-w-0 flex-1 items-center gap-3 p-3"
 							>
 								{recipe.heroImage ? (

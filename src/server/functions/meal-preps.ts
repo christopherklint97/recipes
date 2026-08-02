@@ -296,10 +296,26 @@ export const setMealPrepRecipeServingsFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data }) => {
+		const existsInMealPlan = db
+			.select({ recipeId: mealPrepRecipes.recipeId })
+			.from(mealPrepRecipes)
+			.where(
+				and(
+					eq(mealPrepRecipes.mealPrepId, data.mealPrepId),
+					eq(mealPrepRecipes.recipeId, data.recipeId),
+				),
+			)
+			.get();
+		if (!existsInMealPlan) {
+			throw new Error("Recipe is not part of this meal plan");
+		}
 		db.update(mealPrepRecipes)
 			.set({ servings: data.servings })
 			.where(
-				sql`${mealPrepRecipes.mealPrepId} = ${data.mealPrepId} and ${mealPrepRecipes.recipeId} = ${data.recipeId}`,
+				and(
+					eq(mealPrepRecipes.mealPrepId, data.mealPrepId),
+					eq(mealPrepRecipes.recipeId, data.recipeId),
+				),
 			)
 			.run();
 		return { ok: true };

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	Link,
@@ -45,12 +45,14 @@ import {
 	listCollectionsForRecipeFn,
 	setRecipeInCollectionFn,
 } from "../../server/functions/collections.ts";
+import { setMealPrepRecipeServingsFn } from "../../server/functions/meal-preps.ts";
 import { deleteRecipeFn, getRecipeFn } from "../../server/functions/recipes.ts";
 
 export const Route = createFileRoute("/_app/recipes/$id")({
 	validateSearch: z.object({
 		servings: z.coerce.number().int().min(1).max(100).optional(),
 		fromWeek: z.string().optional(),
+		mealPrepId: z.string().min(1).optional(),
 	}),
 	loader: async ({ params }) => {
 		const recipe = await getRecipeFn({ data: { id: params.id } });
@@ -62,8 +64,13 @@ export const Route = createFileRoute("/_app/recipes/$id")({
 
 function RecipeDetailPage() {
 	const recipe = Route.useLoaderData();
-	const { servings: mealPrepServings, fromWeek } = Route.useSearch();
+	const {
+		servings: mealPrepServings,
+		fromWeek,
+		mealPrepId,
+	} = Route.useSearch();
 	const router = useRouter();
+	const qc = useQueryClient();
 	const [mealPrepOpen, setMealPrepOpen] = useState(false);
 	const [servings, setServings] = useState(mealPrepServings ?? recipe.servings);
 
@@ -80,6 +87,24 @@ function RecipeDetailPage() {
 				: router.navigate({ to: "/recipes" }));
 		},
 	});
+	const saveMealPlanServings = useMutation({
+		mutationFn: (value: number) => {
+			if (!mealPrepId) throw new Error("Meal plan context is required");
+			return setMealPrepRecipeServingsFn({
+				data: { mealPrepId, recipeId: recipe.id, servings: value },
+			});
+		},
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: ["meal-prep", mealPrepId] }),
+				qc.invalidateQueries({ queryKey: ["current-week"] }),
+				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
+			]),
+	});
+	const changeServings = (value: number) => {
+		setServings(value);
+		if (mealPrepId) saveMealPlanServings.mutate(value);
+	};
 
 	const totalMinutes = totalRecipeMinutes(recipe);
 
@@ -117,7 +142,7 @@ function RecipeDetailPage() {
 						<Link
 							to="/recipes/$id/cook"
 							params={{ id: recipe.id }}
-							search={{ servings }}
+							search={{ servings, fromWeek, mealPrepId }}
 						>
 							<Play className="size-4" />
 							Cook
@@ -182,8 +207,13 @@ function RecipeDetailPage() {
 				<ServingsControl
 					value={servings}
 					baseValue={recipe.servings}
-					onChange={setServings}
+					onChange={changeServings}
 				/>
+				{mealPrepId && (
+					<p className="text-xs text-muted-foreground">
+						Saved for this meal plan only.
+					</p>
+				)}
 				{totalMinutes && (
 					<span className="inline-flex items-center gap-1.5">
 						<Clock className="size-4" />

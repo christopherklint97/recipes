@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	Link,
@@ -19,11 +20,14 @@ import { z } from "zod";
 import { Button } from "../../components/ui/button.tsx";
 import { formatQuantity, formatSeconds } from "../../lib/format.ts";
 import { useWakeLock } from "../../lib/wakelock.ts";
+import { setMealPrepRecipeServingsFn } from "../../server/functions/meal-preps.ts";
 import { getRecipeFn } from "../../server/functions/recipes.ts";
 
 export const Route = createFileRoute("/_app/recipes/$id_/cook")({
 	validateSearch: z.object({
 		servings: z.coerce.number().int().min(1).max(100).optional(),
+		fromWeek: z.string().optional(),
+		mealPrepId: z.string().min(1).optional(),
 	}),
 	loader: async ({ params }) => {
 		const r = await getRecipeFn({ data: { id: params.id } });
@@ -35,10 +39,22 @@ export const Route = createFileRoute("/_app/recipes/$id_/cook")({
 
 function CookPage() {
 	const recipe = Route.useLoaderData();
-	const { servings: initialServings } = Route.useSearch();
+	const { servings: initialServings, fromWeek, mealPrepId } = Route.useSearch();
 	const navigate = useNavigate();
 	const [stepIndex, setStepIndex] = useState(0);
 	const [servings, setServings] = useState(initialServings ?? recipe.servings);
+	const saveMealPlanServings = useMutation({
+		mutationFn: (value: number) => {
+			if (!mealPrepId) throw new Error("Meal plan context is required");
+			return setMealPrepRecipeServingsFn({
+				data: { mealPrepId, recipeId: recipe.id, servings: value },
+			});
+		},
+	});
+	const changeServings = (value: number) => {
+		setServings(value);
+		if (mealPrepId) saveMealPlanServings.mutate(value);
+	};
 	useWakeLock(true);
 
 	const baseServings = Math.max(1, recipe.servings);
@@ -70,7 +86,7 @@ function CookPage() {
 		void navigate({
 			to: "/recipes/$id",
 			params: { id: recipe.id },
-			search: { servings },
+			search: { servings, fromWeek, mealPrepId },
 		});
 	}
 
@@ -99,7 +115,7 @@ function CookPage() {
 								variant="ghost"
 								size="icon"
 								className="h-7 w-7"
-								onClick={() => setServings((s) => Math.max(1, s - 1))}
+								onClick={() => changeServings(Math.max(1, servings - 1))}
 							>
 								<Minus className="size-3.5" />
 							</Button>
@@ -110,7 +126,7 @@ function CookPage() {
 								variant="ghost"
 								size="icon"
 								className="h-7 w-7"
-								onClick={() => setServings((s) => Math.min(50, s + 1))}
+								onClick={() => changeServings(Math.min(100, servings + 1))}
 							>
 								<Plus className="size-3.5" />
 							</Button>
