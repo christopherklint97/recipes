@@ -319,7 +319,7 @@ function RecipeDetailPage() {
 			<AddToMealPrepDialog
 				open={mealPrepOpen}
 				onOpenChange={setMealPrepOpen}
-				recipes={[{ id: recipe.id, title: recipe.title }]}
+				recipes={[{ id: recipe.id, title: recipe.title, servings }]}
 			/>
 		</div>
 	);

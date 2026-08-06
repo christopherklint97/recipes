@@ -240,6 +240,9 @@ export const addRecipesToWeekFn = createServerFn({ method: "POST" })
 		z.object({
 			weekStart: weekStartSchema,
 			recipeIds: recipeIdsSchema.min(1),
+			servingsByRecipe: z
+				.record(z.string().min(1), z.number().int().min(1).max(100))
+				.optional(),
 		}),
 	)
 	.handler(async ({ data }) => {
@@ -256,7 +259,7 @@ export const addRecipesToWeekFn = createServerFn({ method: "POST" })
 					.values({
 						mealPrepId,
 						recipeId: recipe.id,
-						servings: recipe.servings,
+						servings: data.servingsByRecipe?.[recipe.id] ?? recipe.servings,
 					})
 					.onConflictDoNothing()
 					.run();

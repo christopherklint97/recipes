@@ -22,6 +22,7 @@ import { Label } from "../ui/label.tsx";
 export type MealPrepCandidate = {
 	id: string;
 	title: string;
+	servings?: number;
 };
 
 export function AddToMealPrepDialog({
@@ -49,7 +50,20 @@ export function AddToMealPrepDialog({
 	}, [open, defaultWeekStart]);
 
 	const add = useMutation({
-		mutationFn: () => addRecipesToWeekFn({ data: { weekStart, recipeIds } }),
+		mutationFn: () =>
+			addRecipesToWeekFn({
+				data: {
+					weekStart,
+					recipeIds,
+					servingsByRecipe: Object.fromEntries(
+						recipes.flatMap((recipe) =>
+							typeof recipe.servings === "number"
+								? [[recipe.id, recipe.servings]]
+								: [],
+						),
+					),
+				},
+			}),
 		onSuccess: async ({ id }) => {
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
