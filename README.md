@@ -21,8 +21,11 @@ bun --bun run build
 
 This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
 
+Vitest must run on Node rather than Bun because Bun's Vite module runner currently
+drops explicit exports from packages such as Zod. The package script selects Node:
+
 ```bash
-bun --bun run test
+bun run test
 ```
 
 ## Styling

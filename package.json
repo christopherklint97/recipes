@@ -12,7 +12,7 @@
     "build": "bun --bun vite build",
     "build:icons": "bun run scripts/build-icons.ts",
     "preview": "bun --bun vite preview",
-    "test": "vitest run --passWithNoTests",
+    "test": "node ./node_modules/vitest/vitest.mjs run --passWithNoTests",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
