@@ -174,6 +174,18 @@ export const shoppingChecks = sqliteTable("shopping_checks", {
 	key: text().primaryKey(),
 });
 
+export const appSettings = sqliteTable("app_settings", {
+	id: text().primaryKey().default("app"),
+	weekStartsOn: text("week_starts_on", {
+		enum: ["sunday", "monday"],
+	})
+		.notNull()
+		.default("sunday"),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
 export type Recipe = typeof recipes.$inferSelect;
 export type NewRecipe = typeof recipes.$inferInsert;
 export type Ingredient = typeof ingredients.$inferSelect;

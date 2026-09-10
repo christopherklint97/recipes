@@ -15,6 +15,7 @@ import {
 	Utensils,
 } from "lucide-react";
 import { useState } from "react";
+import { EditMealPrepDialog } from "../../components/meal-prep/EditMealPrepDialog.tsx";
 import {
 	ManualMealItemDialog,
 	type ManualMealItemValue,
@@ -22,28 +23,14 @@ import {
 import { useMealPrep } from "../../components/meal-prep/MealPrepProvider.tsx";
 import { RecipeDuration } from "../../components/recipe/RecipeDuration.tsx";
 import { Button } from "../../components/ui/button.tsx";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "../../components/ui/dialog.tsx";
 import { Input } from "../../components/ui/input.tsx";
-import { Label } from "../../components/ui/label.tsx";
-import {
-	formatWeek,
-	formatWeekRange,
-	normalizeToWeekStart,
-	weekStartFromOffset,
-} from "../../lib/week.ts";
+import { formatWeek, formatWeekRange } from "../../lib/week.ts";
 import {
 	deleteMealPrepFn,
 	getMealPrepFn,
 	removeManualMealPrepItemFn,
 	removeRecipeFromMealPrepFn,
 	setMealPrepRecipeServingsFn,
-	updateMealPrepFn,
 } from "../../server/functions/meal-preps.ts";
 
 export const Route = createFileRoute("/_app/meal-prep/$id")({
@@ -333,92 +320,5 @@ function MealPrepDetailPage() {
 				onOpenChange={setEditOpen}
 			/>
 		</div>
-	);
-}
-
-function EditMealPrepDialog({
-	mealPrep,
-	open,
-	onOpenChange,
-}: {
-	mealPrep: { id: string; name: string; weekStart: string };
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const qc = useQueryClient();
-	const [name, setName] = useState(mealPrep.name);
-	const [weekStart, setWeekStart] = useState(mealPrep.weekStart);
-	const update = useMutation({
-		mutationFn: () =>
-			updateMealPrepFn({ data: { id: mealPrep.id, name, weekStart } }),
-		onSuccess: async () => {
-			await qc.invalidateQueries({ queryKey: ["meal-prep", mealPrep.id] });
-			await qc.invalidateQueries({ queryKey: ["meal-preps"] });
-			onOpenChange(false);
-		},
-	});
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Edit meal prep</DialogTitle>
-				</DialogHeader>
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="edit-meal-name">Name</Label>
-						<Input
-							id="edit-meal-name"
-							value={name}
-							onChange={(event) => setName(event.target.value)}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="edit-meal-week">Week</Label>
-						<div className="flex flex-wrap gap-2">
-							{[
-								["This week", 0],
-								["Next week", 1],
-								["In two weeks", 2],
-							].map(([label, offset]) => (
-								<Button
-									key={label}
-									type="button"
-									size="sm"
-									variant={
-										weekStart === weekStartFromOffset(Number(offset))
-											? "secondary"
-											: "outline"
-									}
-									onClick={() =>
-										setWeekStart(weekStartFromOffset(Number(offset)))
-									}
-								>
-									{label}
-								</Button>
-							))}
-						</div>
-						<Input
-							id="edit-meal-week"
-							type="date"
-							value={weekStart}
-							onChange={(event) =>
-								setWeekStart(normalizeToWeekStart(event.target.value))
-							}
-						/>
-						<p className="text-xs text-muted-foreground">
-							{formatWeek(weekStart)} · {formatWeekRange(weekStart)}
-						</p>
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						onClick={() => update.mutate()}
-						disabled={!name.trim() || update.isPending}
-					>
-						{update.isPending ? "Saving…" : "Save changes"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
 	);
 }

@@ -10,12 +10,14 @@ import {
 	ChefHat,
 	Folder,
 	LogOut,
+	Settings,
 	ShoppingCart,
 } from "lucide-react";
 import { MealPrepProvider } from "../components/meal-prep/MealPrepProvider.tsx";
 import { ThemeToggle } from "../components/shell/ThemeToggle.tsx";
 import { UpdatePrompt } from "../components/shell/UpdatePrompt.tsx";
 import { getSessionFn } from "../server/auth/getSession.ts";
+import { getAppSettingsFn } from "../server/functions/settings.ts";
 
 export const Route = createFileRoute("/_app")({
 	beforeLoad: async ({ location }) => {
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/_app")({
 		}
 		return { session };
 	},
+	loader: () => getAppSettingsFn(),
 	component: AppLayout,
 });
 
@@ -52,6 +55,7 @@ const NAV_ITEMS = [
 	{ to: "/recipes", label: "Recipes", icon: ChefHat, exact: true },
 	{ to: "/collections", label: "Collections", icon: Folder, exact: false },
 	{ to: "/shopping", label: "Shopping", icon: ShoppingCart, exact: false },
+	{ to: "/settings", label: "Settings", icon: Settings, exact: true },
 ] as const;
 
 function TopNav() {
@@ -109,7 +113,7 @@ function LogoutButton() {
 function BottomNav() {
 	return (
 		<nav
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
 			aria-label="Primary navigation"
 		>
 			{NAV_ITEMS.map((item) => (

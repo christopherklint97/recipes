@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import { CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -25,6 +26,8 @@ export type MealPrepCandidate = {
 	servings?: number;
 };
 
+const appRoute = getRouteApi("/_app");
+
 export function AddToMealPrepDialog({
 	open,
 	onOpenChange,
@@ -37,8 +40,11 @@ export function AddToMealPrepDialog({
 	defaultWeekStart?: string;
 }) {
 	const qc = useQueryClient();
-	const [weekStart, setWeekStart] = useState(
-		defaultWeekStart ?? weekStartFromOffset(),
+	const { weekStartsOn } = appRoute.useLoaderData();
+	const [weekStart, setWeekStart] = useState(() =>
+		defaultWeekStart
+			? normalizeToWeekStart(defaultWeekStart, weekStartsOn)
+			: weekStartFromOffset(0, new Date(), weekStartsOn),
 	);
 	const recipeIds = useMemo(
 		() => recipes.map((recipe) => recipe.id),
@@ -46,8 +52,13 @@ export function AddToMealPrepDialog({
 	);
 
 	useEffect(() => {
-		if (open) setWeekStart(defaultWeekStart ?? weekStartFromOffset());
-	}, [open, defaultWeekStart]);
+		if (open)
+			setWeekStart(
+				defaultWeekStart
+					? normalizeToWeekStart(defaultWeekStart, weekStartsOn)
+					: weekStartFromOffset(0, new Date(), weekStartsOn),
+			);
+	}, [open, defaultWeekStart, weekStartsOn]);
 
 	const add = useMutation({
 		mutationFn: () =>
@@ -98,7 +109,11 @@ export function AddToMealPrepDialog({
 								["Next week", 1],
 								["In two weeks", 2],
 							].map(([label, offset]) => {
-								const value = weekStartFromOffset(Number(offset));
+								const value = weekStartFromOffset(
+									Number(offset),
+									new Date(),
+									weekStartsOn,
+								);
 								return (
 									<Button
 										key={label}
@@ -117,7 +132,9 @@ export function AddToMealPrepDialog({
 							type="date"
 							value={weekStart}
 							onChange={(event) =>
-								setWeekStart(normalizeToWeekStart(event.target.value))
+								setWeekStart(
+									normalizeToWeekStart(event.target.value, weekStartsOn),
+								)
 							}
 						/>
 						<p className="text-xs text-muted-foreground">

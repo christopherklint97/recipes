@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppImportRouteImport } from './routes/_app/import'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppShoppingRouteImport } from './routes/_app/shopping'
 import { Route as AppWeekRouteImport } from './routes/_app/week'
 import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collections.index'
@@ -47,6 +48,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppImportRoute = AppImportRouteImport.update({
   id: '/import',
   path: '/import',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppShoppingRoute = AppShoppingRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
+  '/settings': typeof AppSettingsRoute
   '/shopping': typeof AppShoppingRoute
   '/week': typeof AppWeekRoute
   '/collections/$id': typeof AppCollectionsIdRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
+  '/settings': typeof AppSettingsRoute
   '/shopping': typeof AppShoppingRoute
   '/week': typeof AppWeekRoute
   '/': typeof AppIndexRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/import': typeof AppImportRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/shopping': typeof AppShoppingRoute
   '/_app/week': typeof AppWeekRoute
   '/_app/': typeof AppIndexRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/import'
+    | '/settings'
     | '/shopping'
     | '/week'
     | '/collections/$id'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/import'
+    | '/settings'
     | '/shopping'
     | '/week'
     | '/'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/import'
+    | '/_app/settings'
     | '/_app/shopping'
     | '/_app/week'
     | '/_app/'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof AppImportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/shopping': {
@@ -419,6 +438,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppImportRoute: typeof AppImportRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppShoppingRoute: typeof AppShoppingRoute
   AppWeekRoute: typeof AppWeekRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -435,6 +455,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppImportRoute: AppImportRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppShoppingRoute: AppShoppingRoute,
   AppWeekRoute: AppWeekRoute,
   AppIndexRoute: AppIndexRoute,

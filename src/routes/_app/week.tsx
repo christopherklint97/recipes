@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	getRouteApi,
+	Link,
+	useNavigate,
+} from "@tanstack/react-router";
 import {
 	ArrowDown,
 	ArrowUp,
@@ -28,8 +33,9 @@ import { summarizeDishes } from "../../lib/planning.ts";
 import {
 	formatWeek,
 	formatWeekRange,
-	isIsoWeekStart,
+	isWeekStart,
 	shiftWeekStart,
+	type WeekStartsOn,
 	weekStartFromOffset,
 } from "../../lib/week.ts";
 import {
@@ -40,15 +46,29 @@ import {
 	reorderMealPrepItemsFn,
 	setMealPrepItemCookedFn,
 } from "../../server/functions/meal-preps.ts";
+import { getAppSettingsFn } from "../../server/functions/settings.ts";
 
-async function loadWeek(weekStart = weekStartFromOffset()) {
+const appRoute = getRouteApi("/_app");
+
+async function loadWeek(
+	weekStart?: string,
+	configuredWeekStart?: WeekStartsOn,
+) {
+	const weekStartsOn =
+		configuredWeekStart ?? (await getAppSettingsFn()).weekStartsOn;
+	const resolvedWeekStart =
+		weekStart ?? weekStartFromOffset(0, new Date(), weekStartsOn);
 	const plans = (await listMealPrepsFn()).filter(
-		(plan) => plan.weekStart === weekStart,
+		(plan) => plan.weekStart === resolvedWeekStart,
 	);
 	const details = await Promise.all(
 		plans.map((plan) => getMealPrepFn({ data: { id: plan.id } })),
 	);
-	return { weekStart, plans: details.filter((plan) => plan !== null) };
+	return {
+		weekStart: resolvedWeekStart,
+		weekStartsOn,
+		plans: details.filter((plan) => plan !== null),
+	};
 }
 
 type WeekData = Awaited<ReturnType<typeof loadWeek>>;
@@ -99,6 +119,7 @@ export const Route = createFileRoute("/_app/week")({
 
 function CurrentWeekPage() {
 	const initial = Route.useLoaderData();
+	const { weekStartsOn } = appRoute.useLoaderData();
 	const { weekStart: requestedWeekStart } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
 	const qc = useQueryClient();
@@ -110,18 +131,19 @@ function CurrentWeekPage() {
 		name: string;
 		item?: ManualMealItemValue;
 	} | null>(null);
-	const currentWeekStart = weekStartFromOffset();
+	const currentWeekStart = weekStartFromOffset(0, new Date(), weekStartsOn);
 	const selectedWeekStart =
-		requestedWeekStart && isIsoWeekStart(requestedWeekStart)
+		requestedWeekStart && isWeekStart(requestedWeekStart, weekStartsOn)
 			? requestedWeekStart
 			: currentWeekStart;
-	const { data = { weekStart: selectedWeekStart, plans: [] }, isPending } =
-		useQuery({
-			queryKey: ["current-week", selectedWeekStart],
-			queryFn: () => loadWeek(selectedWeekStart),
-			initialData:
-				selectedWeekStart === initial.weekStart ? initial : undefined,
-		});
+	const {
+		data = { weekStart: selectedWeekStart, weekStartsOn, plans: [] },
+		isPending,
+	} = useQuery({
+		queryKey: ["current-week", weekStartsOn, selectedWeekStart],
+		queryFn: () => loadWeek(selectedWeekStart, weekStartsOn),
+		initialData: selectedWeekStart === initial.weekStart ? initial : undefined,
+	});
 	const recipes = data.plans.flatMap((plan) => plan.recipes);
 	const manualItems = data.plans.flatMap((plan) => plan.manualItems);
 	const summary = summarizeDishes(recipes, manualItems);
@@ -156,7 +178,11 @@ function CurrentWeekPage() {
 				qc.invalidateQueries({ queryKey: ["meal-preps"] }),
 			]),
 	});
-	const weekQueryKey = ["current-week", selectedWeekStart] as const;
+	const weekQueryKey = [
+		"current-week",
+		weekStartsOn,
+		selectedWeekStart,
+	] as const;
 	const reorder = useMutation({
 		mutationFn: ({
 			mealPrepId,

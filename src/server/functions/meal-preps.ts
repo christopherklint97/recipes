@@ -9,14 +9,18 @@ import {
 	mealPreps,
 	recipes,
 } from "../../db/schema.ts";
-import { isIsoWeekStart } from "../../lib/week.ts";
+import { isWeekStart } from "../../lib/week.ts";
 import { authedMiddleware } from "../auth/middleware.ts";
+import { assertConfiguredWeekStart } from "../settings-store.server.ts";
 import { manualMealPrepItemInput } from "./validation.ts";
 
 const weekStartSchema = z
 	.string()
 	.regex(/^\d{4}-\d{2}-\d{2}$/)
-	.refine(isIsoWeekStart, "Week start must be a valid ISO-week Monday");
+	.refine(
+		(value) => isWeekStart(value, "sunday") || isWeekStart(value, "monday"),
+		"Week start must be a valid Sunday or Monday",
+	);
 const recipeIdsSchema = z.array(z.string().min(1)).max(100);
 const mealPrepOrderItemSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("recipe"), id: z.string().min(1) }),
@@ -48,7 +52,10 @@ function ensureMealPrepForWeek(weekStart: string): string {
 export const ensureMealPrepForWeekFn = createServerFn({ method: "POST" })
 	.middleware([authedMiddleware])
 	.validator(z.object({ weekStart: weekStartSchema }))
-	.handler(async ({ data }) => ({ id: ensureMealPrepForWeek(data.weekStart) }));
+	.handler(async ({ data }) => {
+		assertConfiguredWeekStart(data.weekStart);
+		return { id: ensureMealPrepForWeek(data.weekStart) };
+	});
 
 export const listMealPrepsFn = createServerFn({ method: "GET" })
 	.middleware([authedMiddleware])
@@ -177,6 +184,7 @@ export const createMealPrepFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data }) => {
+		assertConfiguredWeekStart(data.weekStart);
 		const id = crypto.randomUUID();
 		const recipeIds = [...new Set(data.recipeIds ?? [])];
 		const recipeRows =
@@ -246,6 +254,7 @@ export const addRecipesToWeekFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data }) => {
+		assertConfiguredWeekStart(data.weekStart);
 		const mealPrepId = ensureMealPrepForWeek(data.weekStart);
 		const recipeIds = [...new Set(data.recipeIds)];
 		const recipeRows = db
@@ -278,6 +287,7 @@ export const updateMealPrepFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data }) => {
+		assertConfiguredWeekStart(data.weekStart);
 		db.update(mealPreps)
 			.set({
 				name: data.name.trim(),
@@ -443,6 +453,7 @@ export const addManualMealPrepItemToWeekFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data }) => {
+		assertConfiguredWeekStart(data.weekStart);
 		const mealPrepId = ensureMealPrepForWeek(data.weekStart);
 		const id = crypto.randomUUID();
 		db.insert(mealPrepItems)

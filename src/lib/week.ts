@@ -1,17 +1,34 @@
-export function isIsoWeekStart(value: string): boolean {
+export type WeekStartsOn = "sunday" | "monday";
+
+export const DEFAULT_WEEK_START: WeekStartsOn = "sunday";
+
+const WEEKDAY_INDEX: Record<WeekStartsOn, number> = {
+	sunday: 0,
+	monday: 1,
+};
+
+export function isWeekStart(
+	value: string,
+	weekStartsOn: WeekStartsOn = DEFAULT_WEEK_START,
+): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
 	const date = new Date(`${value}T00:00:00Z`);
 	return (
 		!Number.isNaN(date.getTime()) &&
 		date.toISOString().slice(0, 10) === value &&
-		date.getUTCDay() === 1
+		date.getUTCDay() === WEEKDAY_INDEX[weekStartsOn]
 	);
 }
 
-export function weekStartFromOffset(offset = 0, today = new Date()): string {
+export function weekStartFromOffset(
+	offset = 0,
+	today = new Date(),
+	weekStartsOn: WeekStartsOn = DEFAULT_WEEK_START,
+): string {
 	const date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 	const day = date.getDay();
-	date.setDate(date.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+	const firstDay = WEEKDAY_INDEX[weekStartsOn];
+	date.setDate(date.getDate() - ((day - firstDay + 7) % 7) + offset * 7);
 	return toDateInput(date);
 }
 
@@ -22,10 +39,18 @@ export function toDateInput(date: Date): string {
 	return `${year}-${month}-${day}`;
 }
 
-export function normalizeToWeekStart(value: string): string {
+export function normalizeToWeekStart(
+	value: string,
+	weekStartsOn: WeekStartsOn = DEFAULT_WEEK_START,
+): string {
 	const [year, month, day] = value.split("-").map(Number);
-	if (!year || !month || !day) return weekStartFromOffset();
-	return weekStartFromOffset(0, new Date(year, month - 1, day));
+	if (!year || !month || !day)
+		return weekStartFromOffset(0, new Date(), weekStartsOn);
+	return weekStartFromOffset(0, new Date(year, month - 1, day), weekStartsOn);
+}
+
+export function weekStartDelta(from: WeekStartsOn, to: WeekStartsOn): number {
+	return WEEKDAY_INDEX[to] - WEEKDAY_INDEX[from];
 }
 
 export function shiftWeekStart(value: string, weeks: number): string {
@@ -49,8 +74,12 @@ export function getIsoWeek(value: string): { week: number; year: number } {
 }
 
 export function formatWeek(value: string): string {
-	const { week, year } = getIsoWeek(value);
-	return `Week ${week}, ${year}`;
+	const [year, month, day] = value.split("-").map(Number);
+	const midpoint = new Date(Date.UTC(year, month - 1, day + 3));
+	const { week, year: weekYear } = getIsoWeek(
+		midpoint.toISOString().slice(0, 10),
+	);
+	return `Week ${week}, ${weekYear}`;
 }
 
 export function formatWeekRange(value: string): string {
