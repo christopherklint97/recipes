@@ -25,11 +25,13 @@ import { Route as AppRecipesIdRouteImport } from './routes/_app/recipes.$id'
 import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes.new'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiExportRecipesRouteImport } from './routes/api/export/recipes'
 import { Route as ApiImagesNameRouteImport } from './routes/api/images/$name'
 import { Route as ApiShoppingEventsRouteImport } from './routes/api/shopping/events'
 import { Route as ApiUploadImageRouteImport } from './routes/api/upload/image'
 import { Route as AppRecipesIdCookRouteImport } from './routes/_app/recipes.$id_.cook'
 import { Route as AppRecipesIdEditRouteImport } from './routes/_app/recipes.$id_.edit'
+import { Route as ApiExportImagesNameRouteImport } from './routes/api/export/images/$name'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -110,6 +112,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExportRecipesRoute = ApiExportRecipesRouteImport.update({
+  id: '/api/export/recipes',
+  path: '/api/export/recipes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImagesNameRoute = ApiImagesNameRouteImport.update({
   id: '/api/images/$name',
   path: '/api/images/$name',
@@ -135,6 +142,11 @@ const AppRecipesIdEditRoute = AppRecipesIdEditRouteImport.update({
   path: '/recipes/$id/edit',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiExportImagesNameRoute = ApiExportImagesNameRouteImport.update({
+  id: '/api/export/images/$name',
+  path: '/api/export/images/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -149,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/export/recipes': typeof ApiExportRecipesRoute
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
@@ -157,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/recipes/': typeof AppRecipesIndexRoute
   '/recipes/$id/cook': typeof AppRecipesIdCookRoute
   '/recipes/$id/edit': typeof AppRecipesIdEditRoute
+  '/api/export/images/$name': typeof ApiExportImagesNameRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -171,6 +185,7 @@ export interface FileRoutesByTo {
   '/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/export/recipes': typeof ApiExportRecipesRoute
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
@@ -179,6 +194,7 @@ export interface FileRoutesByTo {
   '/recipes': typeof AppRecipesIndexRoute
   '/recipes/$id/cook': typeof AppRecipesIdCookRoute
   '/recipes/$id/edit': typeof AppRecipesIdEditRoute
+  '/api/export/images/$name': typeof ApiExportImagesNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -195,6 +211,7 @@ export interface FileRoutesById {
   '/_app/recipes/new': typeof AppRecipesNewRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/export/recipes': typeof ApiExportRecipesRoute
   '/api/images/$name': typeof ApiImagesNameRoute
   '/api/shopping/events': typeof ApiShoppingEventsRoute
   '/api/upload/image': typeof ApiUploadImageRoute
@@ -203,6 +220,7 @@ export interface FileRoutesById {
   '/_app/recipes/': typeof AppRecipesIndexRoute
   '/_app/recipes/$id_/cook': typeof AppRecipesIdCookRoute
   '/_app/recipes/$id_/edit': typeof AppRecipesIdEditRoute
+  '/api/export/images/$name': typeof ApiExportImagesNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -219,6 +237,7 @@ export interface FileRouteTypes {
     | '/recipes/new'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/export/recipes'
     | '/api/images/$name'
     | '/api/shopping/events'
     | '/api/upload/image'
@@ -227,6 +246,7 @@ export interface FileRouteTypes {
     | '/recipes/'
     | '/recipes/$id/cook'
     | '/recipes/$id/edit'
+    | '/api/export/images/$name'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -241,6 +261,7 @@ export interface FileRouteTypes {
     | '/recipes/new'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/export/recipes'
     | '/api/images/$name'
     | '/api/shopping/events'
     | '/api/upload/image'
@@ -249,6 +270,7 @@ export interface FileRouteTypes {
     | '/recipes'
     | '/recipes/$id/cook'
     | '/recipes/$id/edit'
+    | '/api/export/images/$name'
   id:
     | '__root__'
     | '/_app'
@@ -264,6 +286,7 @@ export interface FileRouteTypes {
     | '/_app/recipes/new'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/export/recipes'
     | '/api/images/$name'
     | '/api/shopping/events'
     | '/api/upload/image'
@@ -272,6 +295,7 @@ export interface FileRouteTypes {
     | '/_app/recipes/'
     | '/_app/recipes/$id_/cook'
     | '/_app/recipes/$id_/edit'
+    | '/api/export/images/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -279,9 +303,11 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiExportRecipesRoute: typeof ApiExportRecipesRoute
   ApiImagesNameRoute: typeof ApiImagesNameRoute
   ApiShoppingEventsRoute: typeof ApiShoppingEventsRoute
   ApiUploadImageRoute: typeof ApiUploadImageRoute
+  ApiExportImagesNameRoute: typeof ApiExportImagesNameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -398,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/export/recipes': {
+      id: '/api/export/recipes'
+      path: '/api/export/recipes'
+      fullPath: '/api/export/recipes'
+      preLoaderRoute: typeof ApiExportRecipesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/images/$name': {
       id: '/api/images/$name'
       path: '/api/images/$name'
@@ -432,6 +465,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/recipes/$id/edit'
       preLoaderRoute: typeof AppRecipesIdEditRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/export/images/$name': {
+      id: '/api/export/images/$name'
+      path: '/api/export/images/$name'
+      fullPath: '/api/export/images/$name'
+      preLoaderRoute: typeof ApiExportImagesNameRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -477,9 +517,11 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiExportRecipesRoute: ApiExportRecipesRoute,
   ApiImagesNameRoute: ApiImagesNameRoute,
   ApiShoppingEventsRoute: ApiShoppingEventsRoute,
   ApiUploadImageRoute: ApiUploadImageRoute,
+  ApiExportImagesNameRoute: ApiExportImagesNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
